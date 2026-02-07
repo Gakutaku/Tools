@@ -12,11 +12,11 @@
     :root {
         /* スマホ横向き時のセルサイズ計算 
            高さ: (画面高さ - 上部要素計 約90px) ÷ 4行
-           幅  : (画面幅 - 左右スペース計 約280px) ÷ 6列
-                 ※左右スペース = サイドバー(約120px*2) + 盤面隙間(約40px)
+           幅  : (画面幅 - 左右スペース計 約260px) ÷ 6列
+                 ※左右スペース = サイドバー(約110px*2) + 間隔(約20px*2)
         */
         --ls-cell-h: calc((100vh - 90px) / 4);
-        --ls-cell-w: calc((100vw - 280px) / 6);
+        --ls-cell-w: calc((100vw - 260px) / 6);
         /* 小さい方を採用して絶対にはみ出さないサイズにする */
         --ls-final-cell: min(var(--ls-cell-h), var(--ls-cell-w));
     }
@@ -215,8 +215,8 @@
         
         .layout-container {
             display: grid;
-            /* 中央列の幅を「最大セルサイズ*6 + 隙間(約32px)」で固定し、左右は伸縮させる */
-            grid-template-columns: 1fr calc(var(--ls-final-cell) * 6 + 32px) 1fr;
+            /* 左右のサイドバーは固定幅、中央は残り全部 */
+            grid-template-columns: 110px 1fr 110px;
             grid-template-rows: auto auto 1fr;
             grid-template-areas:
                 "title title title"
@@ -227,7 +227,9 @@
             height: 100vh;
             max-width: none;
             padding: 5px 10px;
-            gap: 2px;
+            /* ★左右の間隔を統一★ */
+            column-gap: 20px;
+            row-gap: 2px;
         }
 
         .area-title, .area-modes, .area-actions, .area-status, .area-grid {
@@ -252,7 +254,7 @@
             align-items: flex-start; 
             justify-content: flex-start;
             padding-top: 6px; 
-            padding-right: 10px; 
+            /* 個別のpaddingは削除し、gapで間隔を制御 */
         }
         
         /* 右：アクション（上寄せ・底辺合わせ） */
@@ -264,7 +266,7 @@
             justify-content: flex-end; 
             padding-top: 6px; 
             padding-bottom: 6px; 
-            padding-left: 10px; 
+            /* 個別のpaddingは削除 */
         }
 
         /* 中央：グリッド（上寄せ・中央配置） */
@@ -296,7 +298,8 @@
             justify-content: space-between;
             gap: 15px; 
             width: 100%;
-            height: auto; 
+            /* ★高さを親要素いっぱいまで伸ばす★ */
+            height: 100%; 
         }
 
         .action-btn { 
@@ -305,14 +308,14 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            /* ★ボタンを縦に引き伸ばす★ */
             flex-grow: 1; 
             font-size: 1.2rem;
         }
         
-        /* 盤面：幅指定を削除し、中身に合わせて伸縮させる */
+        /* 盤面：中身に合わせて伸縮させる */
         .grid-board { 
             margin: 0; 
-            /* width: ... を削除 */
             box-sizing: border-box;
         }
         
@@ -388,7 +391,7 @@
     const gridElement = document.getElementById('grid');
     const nextCharDisplay = document.getElementById('nextCharDisplay');
     const statusBar = document.getElementById('statusBar');
-    const actionGroup = document.getElementById('actionGroup');
+    // actionGroupの取得は不要になったため削除
 
     function selectMode(id) {
         currentModeId = id;
@@ -423,34 +426,10 @@
             createCell();
         }
 
-        // --- 横向き時のボタン高さ調整 ---
-        if (window.matchMedia("(orientation: landscape)").matches) {
-            updateActionGroupHeight(config.rows);
-        } else {
-            actionGroup.style.height = '';
-        }
+        // ★JSによる高さ調整ロジックを削除（CSSで制御するため）★
     }
     
-    window.addEventListener('resize', () => {
-        const config = modes[currentModeId];
-        if (window.matchMedia("(orientation: landscape)").matches) {
-            updateActionGroupHeight(config.rows);
-        } else {
-            actionGroup.style.height = '';
-        }
-    });
-
-    function updateActionGroupHeight(rows) {
-        const sampleCell = document.querySelector('.cell');
-        if (sampleCell) {
-            const cellSize = sampleCell.getBoundingClientRect().height;
-            // 行数*セル高さ + 隙間(4px)*(行数-1) + パディング(6px*2)
-            const gap = 4;
-            const padding = 12;
-            const totalHeight = (cellSize * rows) + (gap * (rows - 1)) + padding;
-            actionGroup.style.height = `${totalHeight}px`;
-        }
-    }
+    // ★リサイズイベントリスナーも削除★
 
     function createCell() {
         const cell = document.createElement('div');
