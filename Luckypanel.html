@@ -10,13 +10,12 @@
 <style>
     /* --- 基本変数 --- */
     :root {
-        /* スマホ横向き時のセルサイズ計算 
-           高さ: (画面高さ - 上部要素計 約90px) ÷ 4行
-           幅  : (画面幅 - 左右の要素と隙間計 約280px) ÷ 6列
-        */
+        /* スマホ横向き時のセルサイズ計算 */
+        /* 幅計算: 画面幅 - (左メニュー推定120px + 右ボタン85px + 隙間や余白計60px) */
+        /* 右ボタンを狭くした分、マス目を大きく確保できるように調整 */
         --ls-cell-h: calc((100vh - 90px) / 4);
-        --ls-cell-w: calc((100vw - 280px) / 6);
-        /* 小さい方を採用して絶対にはみ出さないサイズにする */
+        --ls-cell-w: calc((100vw - 265px) / 6);
+        /* 小さい方を採用 */
         --ls-final-cell: min(var(--ls-cell-h), var(--ls-cell-w));
     }
 
@@ -94,7 +93,7 @@
         justify-content: center;
         width: 100%;
         max-width: 400px;
-        /* 縦向き時は通常の横並び (HTML順序通り: Reset左, Next右) */
+        /* 縦向き時は Reset左, Next右 */
         flex-direction: row; 
     }
 
@@ -225,9 +224,9 @@
         
         .layout-container {
             display: grid;
-            /* 左(auto) - 中央(盤面) - 右(狭くする) */
-            /* column-gapで等間隔を空ける */
-            grid-template-columns: auto auto minmax(90px, 140px);
+            /* 左(auto) - 中央(固定幅) - 右(固定幅85px) */
+            /* gap: 20px 確保 */
+            grid-template-columns: auto calc(var(--ls-final-cell) * 6 + 32px) 85px;
             grid-template-rows: auto auto 1fr;
             grid-template-areas:
                 "title title title"
@@ -238,7 +237,7 @@
             height: 100vh;
             max-width: none;
             padding: 5px 10px;
-            column-gap: 20px; /* 左右の隙間を統一 */
+            column-gap: 20px; /* 左右の隙間を20pxで統一 */
             row-gap: 2px;
         }
 
@@ -262,7 +261,7 @@
             display: flex;
             align-items: flex-start; 
             justify-content: flex-end; 
-            /* 盤面のpadding-top(6px)と合わせることで開始位置を揃える */
+            /* グリッドのpadding(6px)と合わせる */
             padding-top: 6px; 
         }
         
@@ -273,9 +272,9 @@
             display: flex;
             align-items: flex-start; 
             justify-content: flex-start; 
+            /* グリッドのpadding(6px)と合わせる */
             padding-top: 6px; 
             padding-bottom: 6px; 
-            /* padding-leftは column-gap に任せる */
         }
 
         /* 中央：グリッド（上寄せ・中央配置） */
@@ -291,21 +290,21 @@
         /* 左側ボタンの並びと形状 */
         .mode-group {
             flex-direction: column;
-            gap: 4px; /* 盤面のgap(4px)と揃える */
+            gap: 4px; /* マス目のgap(4px)と揃える */
             width: auto;
         }
         .mode-btn { 
-            width: auto; /* 文字列分 */
-            /* 高さ = セル高さ */
-            height: var(--ls-final-cell);
-            /* 上下中央揃え */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0 10px; 
+            width: auto; 
+            text-align: center; 
+            padding: 0 12px; /* 横幅は文字列分 */
             font-size: 1rem;
             margin: 0;
             box-sizing: border-box;
+            /* ★高さと配置合わせの肝★ */
+            height: var(--ls-final-cell);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         /* 右側ボタンの設定 */
@@ -325,7 +324,7 @@
             justify-content: center;
             align-items: center;
             flex-grow: 1; 
-            font-size: 1.2rem;
+            font-size: 1.1rem;
         }
         
         /* 盤面: 4行x6列で固定 */
@@ -387,10 +386,10 @@
     // モード定義
     // colOffset: 開始列（0始まり）
     // cols: 有効な列数
-    // ① 3x4 (中央4列: 1-4)
-    // ② 4x4 (中央4列: 1-4)
-    // ③ 4x5 (右5列: 1-5)
-    // ④ 4x6 (全6列: 0-5)
+    // ① 3x4 -> 左右1列塗りつぶし (有効列: 1,2,3,4)
+    // ② 4x4 -> 左右1列塗りつぶし (有効列: 1,2,3,4)
+    // ③ 4x5 -> 左1列塗りつぶし (有効列: 1,2,3,4,5)
+    // ④ 4x6 -> 全て有効 (有効列: 0,1,2,3,4,5)
     const modes = {
         1: { rows: 3, cols: 4, colOffset: 1, chars: ['A', 'B', 'C', 'D', 'E'] },
         2: { rows: 4, cols: 4, colOffset: 1, chars: ['A', 'B', 'C', 'D', 'E', 'F', 'G'] },
@@ -449,21 +448,24 @@
             gridElement.style.gridTemplateColumns = `repeat(6, auto)`;
             const totalRows = 4;
             const totalCols = 6;
+
             for (let r = 0; r < totalRows; r++) {
                 for (let c = 0; c < totalCols; c++) {
+                    // 行: 設定行数未満なら有効
                     const isRowActive = r < config.rows;
+                    // 列: オフセット位置から有効列数分だけ有効
                     const isColActive = c >= config.colOffset && c < (config.colOffset + config.cols);
-                    // 横向き用createCell (true=アクティブ, false=フィラー)
-                    createCell(isRowActive && isColActive);
+                    
+                    const isActive = isRowActive && isColActive;
+                    createCell(isActive);
                 }
             }
             updateActionGroupHeight();
         } else {
-            // --- 縦向き: 必要な数だけ描画 ---
+            // --- 縦向き: 必要な数だけ描画 (フィラーなし) ---
             gridElement.style.gridTemplateColumns = `repeat(${config.cols}, min-content)`;
             const totalCells = config.rows * config.cols;
             for (let i = 0; i < totalCells; i++) {
-                // 縦向き用createCell (常にアクティブとして作成)
                 createCell(true);
             }
             actionGroup.style.height = '';
@@ -471,7 +473,6 @@
     }
     
     window.addEventListener('resize', () => {
-        // 向きが変わった場合などに再描画が必要
         initGame();
     });
 
@@ -486,7 +487,6 @@
         }
     }
 
-    // 引数 isActive: trueなら通常セル、falseならフィラー(横向き用)
     function createCell(isActive) {
         const cell = document.createElement('div');
         cell.classList.add('cell'); 
