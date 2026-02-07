@@ -3,22 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ラッキーパネル補助ツール2</title>
+<title>ラッキーパネル補助ツール3</title>
 
 <link rel="icon" href="LuckyPanel_favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="LuckyPanel_favicon.png">
 <style>
     /* =========================================
-       ▼▼▼ ベース設定（スマホ・セーブ1の状態）▼▼▼ 
-       ※ここはセーブ1から一切変更していません
+       ▼▼▼ 基本変数 (スマホ横向き基準) ▼▼▼ 
        =========================================
     */
     :root {
-        /* スマホ横向き時のセルサイズ計算 */
-        /* 幅計算: 画面幅 - (左メニュー推定 + 右ボタン85px + 隙間や余白) */
-        /* 安全マージンを多めにとって計算 */
+        /* 高さ: (画面高さ - 上部要素計 約90px) ÷ 4行 */
         --ls-cell-h: calc((100vh - 90px) / 4);
-        --ls-cell-w: calc((100vw - 280px) / 6);
+        
+        /* ★修正箇所★
+           スマホでの見切れを防ぐため、以前成功した「380px」引く設定に戻しました。
+           (画面幅 - 左右の要素と隙間計 380px) ÷ 6列 
+        */
+        --ls-cell-w: calc((100vw - 380px) / 6);
+        
         /* 小さい方を採用 */
         --ls-final-cell: min(var(--ls-cell-h), var(--ls-cell-w));
     }
@@ -50,7 +53,6 @@
         line-height: 1.2;
     }
 
-    /* ヒントメッセージ */
     .portrait-hint {
         font-size: 0.8rem;
         color: #ffe0e6;
@@ -83,7 +85,6 @@
     .area-status  { order: 4; width: 100%; display: flex; justify-content: center; margin-bottom: 5px; flex-shrink: 0; }
     .area-grid    { order: 5; width: 100%; display: flex; flex-direction: column; align-items: center; flex-grow: 1; overflow: hidden; }
 
-    /* --- ボタン類 --- */
     .mode-group {
         display: flex;
         gap: 8px;
@@ -97,7 +98,6 @@
         justify-content: center;
         width: 100%;
         max-width: 400px;
-        /* 縦向き時は Reset左, Next右 */
         flex-direction: row; 
     }
 
@@ -149,7 +149,6 @@
         margin-left: 5px;
     }
 
-    /* --- グリッド盤面 --- */
     .grid-board {
         display: grid;
         gap: 4px;
@@ -161,7 +160,6 @@
         height: fit-content; 
     }
 
-    /* セル設定 (縦画面) */
     .cell {
         width: 50px;
         height: 50px;
@@ -191,7 +189,6 @@
         border: 2px solid #e9ecef; 
     }
 
-    /* --- フィラー（塗りつぶし）セル --- */
     .cell.filler {
         background-color: #555; 
         border: 1px solid #666; 
@@ -200,7 +197,6 @@
         pointer-events: none;
     }
     
-    /* --- カラーパレット --- */
     .bg-A { background-color: #ff97a2; }
     .bg-B { background-color: #85abf1; }
     .bg-C { background-color: #f7cf86; }
@@ -223,13 +219,11 @@
 
     /* =========================================
        ▼▼▼ 横向き（ランドスケープ）設定 ▼▼▼ 
-       ※ここもセーブ1の状態を維持
        ========================================= */
     @media (orientation: landscape) {
         
         .layout-container {
             display: grid;
-            /* 左(auto) - 中央(auto:中身に合わせる) - 右(固定幅85px) */
             grid-template-columns: auto auto 85px;
             grid-template-rows: auto auto 1fr;
             grid-template-areas:
@@ -258,30 +252,25 @@
         h1 { font-size: 1rem; padding: 2px 0; }
         .status-bar { height: 1.2em; font-size: 0.9rem; margin-bottom: 2px; }
 
-        /* 左：モード選択（上寄せ・右寄せ） */
         .area-modes { 
             grid-area: modes; 
             height: 100%; 
             display: flex;
             align-items: flex-start; 
             justify-content: flex-end; 
-            /* ★盤面のpadding(6px)と完全に合わせる */
             padding-top: 6px; 
         }
         
-        /* 右：アクション（上寄せ・左寄せ） */
         .area-actions { 
             grid-area: actions; 
             height: 100%; 
             display: flex;
             align-items: flex-start; 
             justify-content: flex-start; 
-            /* ★盤面のpadding(6px)と完全に合わせる */
             padding-top: 6px; 
             padding-bottom: 6px; 
         }
 
-        /* 中央：グリッド（上寄せ・中央配置） */
         .area-grid { 
             grid-area: grid; 
             height: 100%; 
@@ -291,10 +280,9 @@
             overflow: hidden; 
         }
 
-        /* 左側ボタンの並びと形状 */
         .mode-group {
             flex-direction: column;
-            gap: 4px; /* ★マス目のgap(4px)と揃える */
+            gap: 4px; 
             width: auto;
         }
         .mode-btn { 
@@ -304,17 +292,14 @@
             font-size: 1rem;
             margin: 0;
             box-sizing: border-box;
-            /* 高さ合わせ */
             height: var(--ls-final-cell);
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        /* 右側ボタンの設定 */
         .action-group {
-            flex-direction: column-reverse; /* 上=Next, 下=Reset */
-            /* ★両端揃えで上辺と底辺を合わせる */
+            flex-direction: column-reverse; 
             justify-content: space-between;
             gap: 15px; 
             width: 100%;
@@ -328,27 +313,23 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            flex-grow: 1; /* ★これで上下いっぱいに広がり底辺が揃う★ */
+            flex-grow: 1; 
             font-size: 1.1rem;
         }
         
-        /* 盤面: 4行x6列で固定 (セーブ1の計算式のまま) */
         .grid-board { 
-            margin: 0 auto; /* 中央配置 */
+            margin: 0 auto; 
             box-sizing: border-box;
-            /* 幅と高さは中身（セル）に合わせて自動で決まるようにする */
-            width: auto;
-            height: auto;
-            /* 明示的に4x6を指定 */
+            /* 4行 + 3gap(12px) + 2padding(12px) = +24px */
+            height: calc(var(--ls-final-cell) * 4 + 24px);
+            /* 6列 + 5gap(20px) + 2padding(12px) = +32px */
+            /* ★ここも修正: 幅計算を正しく */
+            width: calc(var(--ls-final-cell) * 6 + 32px);
+            
             grid-template-columns: repeat(6, var(--ls-final-cell)) !important;
             grid-template-rows: repeat(4, var(--ls-final-cell)) !important;
-            
-            /* スマホ用: セーブ1と同じ計算式 (あえてそのままにします) */
-            height: calc(var(--ls-final-cell) * 4 + 12px + 12px);
-            width: calc(var(--ls-final-cell) * 6 + 12px + 12px);
         }
         
-        /* セルサイズ最大化 */
         .cell { 
             width: var(--ls-final-cell); 
             height: var(--ls-final-cell); 
@@ -357,36 +338,32 @@
     }
 
     /* =========================================
-       ▼▼▼ PC (大画面) 用の特別設定 ▼▼▼ 
-       ※ここだけが新しく追加・変更される部分です
-       =========================================
-    */
+       ▼▼▼ PC/タブレット (大画面) 用の上書き設定 ▼▼▼ 
+       ========================================= */
     @media screen and (min-width: 1024px) and (orientation: landscape) {
         :root {
-            /* 左右の要素(200px*2) + 余白(150px) = 550px引く */
-            --ls-cell-w: calc((100vw - 550px) / 6);
+            /* ★PC用セルサイズ再計算★
+               左右200pxずつのボタンエリア + 余白等を考慮して、
+               かなり余裕を持たせて「580px」引きます。
+               これで絶対に中央が侵食されません。
+            */
+            --ls-cell-w: calc((100vw - 580px) / 6);
         }
 
         .layout-container {
-            /* 左右の列を 200px に拡張 */
+            /* 左右列の幅を共に 200px に固定 */
             grid-template-columns: 200px auto 200px;
         }
         
+        /* 左側のボタンを幅いっぱいに */
         .mode-btn {
             width: 100%;
             font-size: 1.5rem;
         }
         
+        /* 右側のボタンも大きく */
         .action-btn {
             font-size: 1.5rem;
-        }
-
-        /* ★★★ PC表示時の盤面幅修正 ★★★ */
-        /* スマホ用(セーブ1)では計算式が8px足りていませんでしたが、
-           PCではここを修正して右枠を表示させます。
-           横幅: 6セル + 5隙間(20px) + 左右padding(12px) = +32px */
-        .grid-board {
-            width: calc(var(--ls-final-cell) * 6 + 32px);
         }
     }
 
@@ -396,7 +373,7 @@
 
     <div class="layout-container">
         <div class="area-title">
-            <h1>ラッキーパネル補助ツール</h1>
+            <h1>ラッキーパネル補助ツール3</h1>
         </div>
         
         <div class="area-modes">
@@ -429,10 +406,6 @@
 
 <script>
     // モード定義
-    // ① 3x4 -> 左右1列塗りつぶし (有効列: 1,2,3,4)
-    // ② 4x4 -> 左右1列塗りつぶし (有効列: 1,2,3,4)
-    // ③ 4x5 -> 左1列塗りつぶし (有効列: 1,2,3,4,5)
-    // ④ 4x6 -> 全て有効 (有効列: 0,1,2,3,4,5)
     const modes = {
         1: { rows: 3, cols: 4, colOffset: 1, chars: ['A', 'B', 'C', 'D', 'E'] },
         2: { rows: 4, cols: 4, colOffset: 1, chars: ['A', 'B', 'C', 'D', 'E', 'F', 'G'] },
@@ -495,18 +468,15 @@
 
             for (let r = 0; r < totalRows; r++) {
                 for (let c = 0; c < totalCols; c++) {
-                    // 行: 設定行数未満なら有効
                     const isRowActive = r < config.rows;
-                    // 列: オフセット位置から有効列数分だけ有効
                     const isColActive = c >= config.colOffset && c < (config.colOffset + config.cols);
-                    
                     const isActive = isRowActive && isColActive;
                     createCell(isActive);
                 }
             }
             updateActionGroupHeight();
         } else {
-            // --- 縦向き: 必要な数だけ描画 (フィラーなし) ---
+            // --- 縦向き: 必要な数だけ描画 ---
             gridElement.style.gridTemplateColumns = `repeat(${config.cols}, min-content)`;
             gridElement.style.gridTemplateRows = `repeat(${config.rows}, min-content)`;
             const totalCells = config.rows * config.cols;
