@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ラッキーパネル補助ツール4</title>
+<title>ラッキーパネル補助ツール5</title>
 
 <link rel="icon" href="LuckyPanel_favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="LuckyPanel_favicon.png">
@@ -17,7 +17,7 @@
         --ls-cell-h: calc((100vh - 90px) / 4);
         
         /* 幅: (画面幅 - 左右の要素と隙間計 380px) ÷ 6列 */
-        /* ※スマホで見切れないための安全値 */
+        /* ※ここを十分小さくすることで画面からはみ出しにくくします */
         --ls-cell-w: calc((100vw - 380px) / 6);
         
         /* 小さい方を採用して正方形を作る */
@@ -258,7 +258,7 @@
             display: flex;
             align-items: flex-start; 
             justify-content: flex-end; 
-            /* パディング6pxでマス目の上辺と合わせる */
+            /* ★修正★ 盤面のpadding(6px)と合わせる */
             padding-top: 6px; 
         }
         
@@ -269,7 +269,7 @@
             display: flex;
             align-items: flex-start; 
             justify-content: flex-start; 
-            /* パディング6pxでマス目の上下辺と合わせる */
+            /* ★修正★ 盤面のpadding(6px)と合わせる */
             padding-top: 6px; 
             padding-bottom: 6px; 
         }
@@ -307,7 +307,7 @@
         /* 右側ボタン */
         .action-group {
             flex-direction: column-reverse; 
-            justify-content: space-between; /* 上下端に配置 */
+            justify-content: space-between; 
             gap: 15px; 
             width: 100%;
             height: 100%; 
@@ -324,18 +324,19 @@
             font-size: 1.1rem;
         }
         
-        /* 盤面: 4行x6列で固定 */
+        /* 盤面 */
         .grid-board { 
             margin: 0 auto; 
             box-sizing: border-box;
             
-            /* 高さ: 4セル + 3隙間(12px) + 上下padding(12px) = +24px */
-            height: calc(var(--ls-final-cell) * 4 + 24px);
-            
-            /* ★重要修正★
-               幅: 6セル + 5隙間(20px) + 左右padding(12px) = +32px 
-               これまでの +24px では8px足りず右枠が消えていました */
-            width: calc(var(--ls-final-cell) * 6 + 32px);
+            /* ★重要修正★ 
+               widthを計算式で指定するのをやめ、
+               max-contentにすることで中身(セル+隙間+パディング)に
+               合わせて自動的に必要な幅を確保させます。
+               これで絶対に右端が消えません。
+            */
+            width: max-content;
+            height: auto; /* 高さは中身なりでOK */
             
             grid-template-columns: repeat(6, var(--ls-final-cell)) !important;
             grid-template-rows: repeat(4, var(--ls-final-cell)) !important;
@@ -353,11 +354,8 @@
        ========================================= */
     @media screen and (min-width: 1024px) and (orientation: landscape) {
         :root {
-            /* ★PC用セルサイズ計算★
-               左右200px + 余白を考慮し、かなり余裕を持って 580px 引く
-               これで絶対に侵食しません
-            */
-            --ls-cell-w: calc((100vw - 580px) / 6);
+            /* PC用: 左右のパネルが広い分、セルを小さくする */
+            --ls-cell-w: calc((100vw - 600px) / 6);
         }
 
         .layout-container {
@@ -381,7 +379,7 @@
 
     <div class="layout-container">
         <div class="area-title">
-            <h1>ラッキーパネル補助ツール4</h1>
+            <h1>ラッキーパネル補助ツール5</h1>
         </div>
         
         <div class="area-modes">
