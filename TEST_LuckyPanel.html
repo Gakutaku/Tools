@@ -3,26 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ラッキーパネル補助ツール3</title>
+<title>ラッキーパネル補助ツール4</title>
 
 <link rel="icon" href="LuckyPanel_favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="LuckyPanel_favicon.png">
 <style>
     /* =========================================
-       ▼▼▼ 基本変数 (スマホ横向き基準) ▼▼▼ 
+       ▼▼▼ 基本変数 (スマホ・横向き基準) ▼▼▼ 
        =========================================
     */
     :root {
         /* 高さ: (画面高さ - 上部要素計 約90px) ÷ 4行 */
         --ls-cell-h: calc((100vh - 90px) / 4);
         
-        /* ★修正箇所★
-           スマホでの見切れを防ぐため、以前成功した「380px」引く設定に戻しました。
-           (画面幅 - 左右の要素と隙間計 380px) ÷ 6列 
-        */
+        /* 幅: (画面幅 - 左右の要素と隙間計 380px) ÷ 6列 */
+        /* ※スマホで見切れないための安全値 */
         --ls-cell-w: calc((100vw - 380px) / 6);
         
-        /* 小さい方を採用 */
+        /* 小さい方を採用して正方形を作る */
         --ls-final-cell: min(var(--ls-cell-h), var(--ls-cell-w));
     }
 
@@ -224,6 +222,7 @@
         
         .layout-container {
             display: grid;
+            /* 左(auto) - 中央(auto) - 右(固定幅85px) */
             grid-template-columns: auto auto 85px;
             grid-template-rows: auto auto 1fr;
             grid-template-areas:
@@ -252,25 +251,30 @@
         h1 { font-size: 1rem; padding: 2px 0; }
         .status-bar { height: 1.2em; font-size: 0.9rem; margin-bottom: 2px; }
 
+        /* 左：モード選択 */
         .area-modes { 
             grid-area: modes; 
             height: 100%; 
             display: flex;
             align-items: flex-start; 
             justify-content: flex-end; 
+            /* パディング6pxでマス目の上辺と合わせる */
             padding-top: 6px; 
         }
         
+        /* 右：アクション */
         .area-actions { 
             grid-area: actions; 
             height: 100%; 
             display: flex;
             align-items: flex-start; 
             justify-content: flex-start; 
+            /* パディング6pxでマス目の上下辺と合わせる */
             padding-top: 6px; 
             padding-bottom: 6px; 
         }
 
+        /* 中央：グリッド */
         .area-grid { 
             grid-area: grid; 
             height: 100%; 
@@ -280,9 +284,10 @@
             overflow: hidden; 
         }
 
+        /* 左側ボタン */
         .mode-group {
             flex-direction: column;
-            gap: 4px; 
+            gap: 4px; /* マス目のgap(4px)と一致 */
             width: auto;
         }
         .mode-btn { 
@@ -292,15 +297,17 @@
             font-size: 1rem;
             margin: 0;
             box-sizing: border-box;
+            /* 高さ: セルと同じ */
             height: var(--ls-final-cell);
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
+        /* 右側ボタン */
         .action-group {
             flex-direction: column-reverse; 
-            justify-content: space-between;
+            justify-content: space-between; /* 上下端に配置 */
             gap: 15px; 
             width: 100%;
             height: 100%; 
@@ -317,13 +324,17 @@
             font-size: 1.1rem;
         }
         
+        /* 盤面: 4行x6列で固定 */
         .grid-board { 
             margin: 0 auto; 
             box-sizing: border-box;
-            /* 4行 + 3gap(12px) + 2padding(12px) = +24px */
+            
+            /* 高さ: 4セル + 3隙間(12px) + 上下padding(12px) = +24px */
             height: calc(var(--ls-final-cell) * 4 + 24px);
-            /* 6列 + 5gap(20px) + 2padding(12px) = +32px */
-            /* ★ここも修正: 幅計算を正しく */
+            
+            /* ★重要修正★
+               幅: 6セル + 5隙間(20px) + 左右padding(12px) = +32px 
+               これまでの +24px では8px足りず右枠が消えていました */
             width: calc(var(--ls-final-cell) * 6 + 32px);
             
             grid-template-columns: repeat(6, var(--ls-final-cell)) !important;
@@ -342,10 +353,9 @@
        ========================================= */
     @media screen and (min-width: 1024px) and (orientation: landscape) {
         :root {
-            /* ★PC用セルサイズ再計算★
-               左右200pxずつのボタンエリア + 余白等を考慮して、
-               かなり余裕を持たせて「580px」引きます。
-               これで絶対に中央が侵食されません。
+            /* ★PC用セルサイズ計算★
+               左右200px + 余白を考慮し、かなり余裕を持って 580px 引く
+               これで絶対に侵食しません
             */
             --ls-cell-w: calc((100vw - 580px) / 6);
         }
@@ -355,13 +365,11 @@
             grid-template-columns: 200px auto 200px;
         }
         
-        /* 左側のボタンを幅いっぱいに */
         .mode-btn {
             width: 100%;
             font-size: 1.5rem;
         }
         
-        /* 右側のボタンも大きく */
         .action-btn {
             font-size: 1.5rem;
         }
@@ -373,7 +381,7 @@
 
     <div class="layout-container">
         <div class="area-title">
-            <h1>ラッキーパネル補助ツール3</h1>
+            <h1>ラッキーパネル補助ツール4</h1>
         </div>
         
         <div class="area-modes">
