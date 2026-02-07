@@ -10,14 +10,9 @@
 <style>
     /* --- 基本変数 --- */
     :root {
-        /* スマホ横向き時のセルサイズ計算 (見切れ防止の厳密計算)
-           高さ: (画面高さ - タイトル・ステータス計 約80px) ÷ 4行
-           幅  : (画面幅 - 左右サイドバー計 230px) ÷ 6列
-           ※ gapの分(4px * 5つ = 20px程度)も考慮して少し余裕を持たせる
-        */
+        /* スマホ横向き時のセルサイズ計算 */
         --ls-cell-h: calc((100vh - 90px) / 4);
         --ls-cell-w: calc((100vw - 240px) / 6);
-        /* 小さい方を採用して絶対にはみ出さないサイズにする */
         --ls-final-cell: min(var(--ls-cell-h), var(--ls-cell-w));
     }
 
@@ -36,7 +31,7 @@
         -webkit-tap-highlight-color: transparent;
         display: flex;
         justify-content: center;
-        overflow: hidden; /* スクロール禁止 */
+        overflow: hidden;
     }
 
     h1 {
@@ -48,7 +43,7 @@
         line-height: 1.2;
     }
 
-    /* --- レイアウトコンテナ (共通) --- */
+    /* --- レイアウトコンテナ --- */
     .layout-container {
         width: 100%;
         max-width: 600px;
@@ -60,21 +55,20 @@
     /* =========================================
        ▼▼▼ 縦向き（ポートレート）設定 ▼▼▼ 
        ========================================= */
-    /* Flexboxで順序を制御 */
     .layout-container {
         display: flex;
         flex-direction: column;
         align-items: center;
     }
 
-    /* 表示順序の指定 (orderプロパティ) */
+    /* 表示順序 */
     .area-title   { order: 1; width: 100%; display: flex; justify-content: center; flex-shrink: 0; }
     .area-modes   { order: 2; width: 100%; display: flex; justify-content: center; margin-bottom: 8px; flex-shrink: 0; }
     .area-actions { order: 3; width: 100%; display: flex; justify-content: center; margin-bottom: 10px; flex-shrink: 0; }
     .area-status  { order: 4; width: 100%; display: flex; justify-content: center; margin-bottom: 5px; flex-shrink: 0; }
     .area-grid    { order: 5; width: 100%; display: flex; justify-content: center; align-items: flex-start; flex-grow: 1; overflow: hidden; }
 
-    /* --- ボタン類のスタイル --- */
+    /* --- ボタン類 --- */
     .mode-group {
         display: flex;
         gap: 8px;
@@ -109,7 +103,7 @@
     }
 
     .action-btn {
-        padding: 8px 30px; /* 縦向き時は少し高さを抑える */
+        padding: 8px 30px;
         font-size: 1rem;
         border: none;
         border-radius: 4px;
@@ -147,9 +141,9 @@
         touch-action: none;
     }
 
-    /* セル設定 (縦画面デフォルト) */
+    /* セル設定 (縦画面) */
     .cell {
-        width: 50px; /* 縦画面でも4x6が収まるように少し小さめに調整 */
+        width: 50px;
         height: 50px;
         background-color: #fff;
         display: flex;
@@ -167,13 +161,8 @@
         border: 2px solid transparent;
     }
 
-    /* 画面幅がかなり狭いスマホ用の調整 */
     @media (max-width: 360px) {
-        .cell {
-            width: 42px;
-            height: 42px;
-            font-size: 1.1rem;
-        }
+        .cell { width: 42px; height: 42px; font-size: 1.1rem; }
     }
 
     .cell.empty {
@@ -192,7 +181,7 @@
     .bg-G { background-color: #a3d07d; }
     .bg-H { background-color: #ffc0cb; }
     .bg-I { background-color: #b3e5fc; }
-    .bg-J { background-color: #d1c4e9; }
+    .bg-J { background-color: #babec7; }
     .bg-K { background-color: #fbfff0; }
 
     .bg-star { background-color: #fff176; color: #f57f17; border: 2px solid #fbc02d; }
@@ -210,7 +199,6 @@
         
         .layout-container {
             display: grid;
-            /* 左(110px) - 中央(残り) - 右(110px) */
             grid-template-columns: 110px 1fr 110px;
             grid-template-rows: auto auto 1fr;
             grid-template-areas:
@@ -231,11 +219,9 @@
             margin: 0;
         }
 
-        /* エリア配置 */
         .area-title   { grid-area: title; }
         .area-status  { grid-area: status; }
         
-        /* タイトル・ステータス微調整 */
         h1 { font-size: 1rem; padding: 2px 0; }
         .status-bar { height: 1.2em; font-size: 0.9rem; margin-bottom: 2px; }
 
@@ -249,14 +235,14 @@
             padding-top: 5px; 
         }
         
-        /* 右：アクション（中央寄せ） */
+        /* 右：アクション（上寄せ・右寄せ） */
         .area-actions { 
             grid-area: actions; 
             height: 100%; 
             display: flex;
-            align-items: flex-end; 
-            justify-content: center; /* 縦方向中央寄せ */
-            padding-bottom: 20px; 
+            align-items: flex-end; /* 右端へ */
+            justify-content: flex-start; /* ★上辺揃え★ */
+            padding-top: 5px; /* 左側モードや盤面と高さを合わせる */
         }
 
         /* 中央：グリッド（上寄せ・中央配置） */
@@ -279,15 +265,19 @@
 
         .action-group {
             flex-direction: column;
-            gap: 30px; 
+            gap: 30px; /* 間隔維持 */
             width: 100%;
         }
-        .action-btn { width: 100%; padding: 10px 20px; }
+        /* ボタンサイズ（縦に大きく） */
+        .action-btn { 
+            width: 100%; 
+            padding: 22px 10px; /* ★縦のパディングを増やして縦長に★ */
+        }
         
         /* 盤面 */
         .grid-board { margin: 0; }
         
-        /* ★セルサイズ最大化（はみ出し防止計算済み） */
+        /* セルサイズ最大化 */
         .cell { 
             width: var(--ls-final-cell); 
             height: var(--ls-final-cell); 
@@ -316,8 +306,8 @@
 
         <div class="area-actions">
             <div class="action-group">
-                <button class="action-btn" id="resetBtn" onclick="resetCurrentGame()">リセット</button>
                 <button class="action-btn" id="nextBtn" onclick="nextMode()">次へ</button>
+                <button class="action-btn" id="resetBtn" onclick="resetCurrentGame()">リセット</button>
             </div>
         </div>
 
