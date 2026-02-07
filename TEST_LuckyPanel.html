@@ -16,9 +16,7 @@
         /* 高さ: (画面高さ - 上部要素計 約90px) ÷ 4行 */
         --ls-cell-h: calc((100vh - 90px) / 4);
         
-        /* 幅: Save1の計算式(280px)だと隙間を確保した際に6列ではみ出すため、
-           隙間分を含めて安全マージンを「360px」に調整しました。
-           これでSave1の隙間を維持しつつ、全表示が可能になります。 */
+        /* 幅: Save1準拠の隙間を考慮した安全マージン */
         --ls-cell-w: calc((100vw - 360px) / 6);
         
         /* 小さい方を採用 */
@@ -28,7 +26,7 @@
     body {
         font-family: "Helvetica Neue", Arial, sans-serif;
         
-        /* ▼▼▼ 【セーブ3】背景設定 ▼▼▼ */
+        /* ▼▼▼ 背景を薄い木目調に変更 ▼▼▼ */
         background-color: #e8dcb9; /* ベースの薄いベージュ */
         /* CSSグラデーションで簡易的な木目（縦縞）を表現 */
         background-image: 
@@ -104,19 +102,16 @@
     
     .mode-btn {
         padding: 8px 12px; font-size: 0.9rem; border: 2px solid #ddd; border-radius: 20px;
-        cursor: pointer; background-color: #ac938a; color: #555; transition: all 0.2s; font-weight: bold; white-space: nowrap;
-        /* ボタンにも少し影をつけて浮き上がらせる */
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        cursor: pointer; background-color: #fff; color: #555; transition: all 0.2s; font-weight: bold; white-space: nowrap;
     }
-    .mode-btn.active { background-color: #57bd5c; color: white; border-color: #6d4c41; box-shadow: 0 2px 5px rgba(0,123,255,0.3); }
+    .mode-btn.active { background-color: #007bff; color: white; border-color: #007bff; box-shadow: 0 2px 5px rgba(0,123,255,0.3); }
 
     .action-btn {
         padding: 10px 0; font-size: 1rem; border: none; border-radius: 4px;
         cursor: pointer; color: white; transition: background-color 0.2s; flex: 1; white-space: nowrap;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
-    #resetBtn { background-color: #adbb9f ; } /* #6c757d */
-    #nextBtn { background-color: #009772 ; } /* #007bff */
+    #resetBtn { background-color: #6c757d; }
+    #nextBtn { background-color: #007bff; }
 
     .status-bar { font-weight: bold; height: 1.5em; color: #555; display: flex; align-items: center; text-shadow: 1px 1px 0 rgba(255,255,255,0.5); }
     .next-char { color: #d35400; font-size: 1.2em; margin-left: 5px; }
@@ -185,8 +180,8 @@
             display: flex;
             align-items: flex-start; 
             justify-content: flex-end; 
-            /* ★修正★ 枠の上辺と揃えるため余白を削除 (0 10px) */
-            padding: 0 10px; 
+            /* 盤面のpadding(6px)と合わせる */
+            padding-top: 6px; 
         }
         
         /* 右エリア */
@@ -196,8 +191,9 @@
             display: flex;
             align-items: flex-start; 
             justify-content: flex-start; 
-            /* ★修正★ 枠の上下辺と揃えるため余白を削除 (0 10px) */
-            padding: 0 10px; 
+            /* 盤面のpadding(6px)と合わせる */
+            padding-top: 6px; 
+            padding-bottom: 6px; 
         }
 
         /* 中央エリア */
@@ -208,7 +204,6 @@
             justify-content: center; 
             align-items: flex-start; 
             overflow: hidden; 
-            /* ここはpaddingなし */
         }
 
         /* 左ボタン */
