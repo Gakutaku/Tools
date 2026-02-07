@@ -12,11 +12,11 @@
     :root {
         /* スマホ横向き時のセルサイズ計算 
            高さ: (画面高さ - 上部要素計 約90px) ÷ 4行
-           幅  : (画面幅 - 左右スペース計 約260px) ÷ 6列
-                 ※左右スペース = サイドバー(約110px*2) + 間隔(約20px*2)
+           幅  : (画面幅 - 左右スペース計 約320px) ÷ 6列
+                 ※左右の余白を多めに確保して見切れを防ぐ
         */
         --ls-cell-h: calc((100vh - 90px) / 4);
-        --ls-cell-w: calc((100vw - 260px) / 6);
+        --ls-cell-w: calc((100vw - 320px) / 6);
         /* 小さい方を採用して絶対にはみ出さないサイズにする */
         --ls-final-cell: min(var(--ls-cell-h), var(--ls-cell-w));
     }
@@ -215,8 +215,7 @@
         
         .layout-container {
             display: grid;
-            /* 左右のサイドバーは固定幅、中央は残り全部 */
-            grid-template-columns: 110px 1fr 110px;
+            grid-template-columns: 1fr calc(var(--ls-final-cell) * 6 + 32px) 1fr;
             grid-template-rows: auto auto 1fr;
             grid-template-areas:
                 "title title title"
@@ -227,9 +226,7 @@
             height: 100vh;
             max-width: none;
             padding: 5px 10px;
-            /* ★左右の間隔を統一★ */
-            column-gap: 20px;
-            row-gap: 2px;
+            gap: 2px;
         }
 
         .area-title, .area-modes, .area-actions, .area-status, .area-grid {
@@ -237,7 +234,6 @@
             margin: 0;
         }
 
-        /* 横向き時はヒント非表示 */
         .portrait-hint { display: none; }
 
         .area-title   { grid-area: title; }
@@ -246,7 +242,6 @@
         h1 { font-size: 1rem; padding: 2px 0; }
         .status-bar { height: 1.2em; font-size: 0.9rem; margin-bottom: 2px; }
 
-        /* 左：モード選択（上寄せ） */
         .area-modes { 
             grid-area: modes; 
             height: 100%; 
@@ -254,10 +249,9 @@
             align-items: flex-start; 
             justify-content: flex-start;
             padding-top: 6px; 
-            /* 個別のpaddingは削除し、gapで間隔を制御 */
+            padding-right: 10px; 
         }
         
-        /* 右：アクション（上寄せ・底辺合わせ） */
         .area-actions { 
             grid-area: actions; 
             height: 100%; 
@@ -266,20 +260,18 @@
             justify-content: flex-end; 
             padding-top: 6px; 
             padding-bottom: 6px; 
-            /* 個別のpaddingは削除 */
+            padding-left: 10px; 
         }
 
-        /* 中央：グリッド（上寄せ・中央配置） */
         .area-grid { 
             grid-area: grid; 
             height: 100%; 
             display: flex;
-            justify-content: center; /* 横方向中央 */
-            align-items: flex-start; /* 縦方向上寄せ */
+            justify-content: center; 
+            align-items: flex-start; 
             overflow: hidden; 
         }
 
-        /* 左側ボタン */
         .mode-group {
             flex-direction: column;
             gap: 6px;
@@ -292,14 +284,12 @@
             font-size: 1.2rem; 
         }
 
-        /* 右側ボタン */
         .action-group {
             flex-direction: column;
             justify-content: space-between;
             gap: 15px; 
             width: 100%;
-            /* ★高さを親要素いっぱいまで伸ばす★ */
-            height: 100%; 
+            height: auto; 
         }
 
         .action-btn { 
@@ -308,15 +298,19 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            /* ★ボタンを縦に引き伸ばす★ */
             flex-grow: 1; 
             font-size: 1.2rem;
         }
         
-        /* 盤面：中身に合わせて伸縮させる */
+        /* 盤面 */
         .grid-board { 
             margin: 0; 
             box-sizing: border-box;
+            /* ★横向き時は常に4行分の高さを確保★
+               セル4つ + ギャップ3つ(12px) + パディング上下(12px) */
+            height: calc(var(--ls-final-cell) * 4 + 12px + 12px);
+            /* 3行モードの時、4行目を透明にするため背景色を指定 */
+            background-color: #555; 
         }
         
         /* セルサイズ最大化 */
@@ -325,6 +319,20 @@
             height: var(--ls-final-cell); 
             font-size: calc(var(--ls-final-cell) * 0.5); 
         }
+
+        /* ★見えないセルのスタイル★ */
+        .cell.hidden-row {
+            background-color: transparent; /* 背景を透明に */
+            border: none;
+            box-shadow: none;
+            pointer-events: none; /* 操作不可 */
+            cursor: default;
+        }
+        /* emptyクラスがあっても透明を優先 */
+        .cell.hidden-row.empty {
+             background-color: transparent;
+             border: none;
+        }
     }
 
 </style>
@@ -332,7 +340,6 @@
 <body>
 
     <div class="layout-container">
-        
         <div class="area-title">
             <h1>ラッキーパネル補助ツール</h1>
         </div>
@@ -363,11 +370,9 @@
             <div class="grid-board" id="grid"></div>
             <div class="portrait-hint">※横向き推奨</div>
         </div>
-
     </div>
 
 <script>
-    // モード定義
     const modes = {
         1: { rows: 3, cols: 4, chars: ['A', 'B', 'C', 'D', 'E'] },
         2: { rows: 4, cols: 4, chars: ['A', 'B', 'C', 'D', 'E', 'F', 'G'] },
@@ -391,7 +396,7 @@
     const gridElement = document.getElementById('grid');
     const nextCharDisplay = document.getElementById('nextCharDisplay');
     const statusBar = document.getElementById('statusBar');
-    // actionGroupの取得は不要になったため削除
+    const actionGroup = document.getElementById('actionGroup');
 
     function selectMode(id) {
         currentModeId = id;
@@ -421,20 +426,61 @@
         gridElement.style.gridTemplateColumns = `repeat(${config.cols}, min-content)`;
         gridElement.innerHTML = '';
 
-        const totalCells = config.rows * config.cols;
-        for (let i = 0; i < totalCells; i++) {
-            createCell();
+        // ★常に4行分のセルを生成する★
+        const maxRows = 4;
+        // 必要なセル数（例: 3x4=12）
+        const validCells = config.rows * config.cols;
+        // 生成する全セル数（例: 4x4=16）
+        const totalCellsToCreate = maxRows * config.cols;
+
+        for (let i = 0; i < totalCellsToCreate; i++) {
+            // 有効なセル数を超えたら「見えないセル」とする
+            const isHidden = i >= validCells;
+            createCell(isHidden);
         }
 
-        // ★JSによる高さ調整ロジックを削除（CSSで制御するため）★
+        if (window.matchMedia("(orientation: landscape)").matches) {
+            updateActionGroupHeight(config.rows);
+        } else {
+            actionGroup.style.height = '';
+        }
     }
     
-    // ★リサイズイベントリスナーも削除★
+    window.addEventListener('resize', () => {
+        const config = modes[currentModeId];
+        if (window.matchMedia("(orientation: landscape)").matches) {
+            updateActionGroupHeight(config.rows);
+        } else {
+            actionGroup.style.height = '';
+        }
+    });
 
-    function createCell() {
+    function updateActionGroupHeight(rows) {
+        const sampleCell = document.querySelector('.cell');
+        if (sampleCell) {
+            const cellSize = sampleCell.getBoundingClientRect().height;
+            const gap = 4;
+            const padding = 12;
+            // ボタンエリアの高さは常に4行分に合わせて固定する
+            const totalHeight = (cellSize * 4) + (gap * 3) + padding;
+            actionGroup.style.height = `${totalHeight}px`;
+        }
+    }
+
+    // 引数追加: isHidden
+    function createCell(isHidden = false) {
         const cell = document.createElement('div');
-        cell.classList.add('cell', 'empty');
-        addEvents(cell);
+        cell.classList.add('cell'); 
+        
+        if (isHidden) {
+            // 見えないセル用のクラスを追加
+            cell.classList.add('hidden-row');
+            // イベントは追加しない
+        } else {
+            // 通常のセル
+            cell.classList.add('empty');
+            addEvents(cell);
+        }
         gridElement.appendChild(cell);
     }
 
@@ -533,7 +579,6 @@
         const moveX = Math.abs(touch.clientX - touchStartX);
         const moveY = Math.abs(touch.clientY - touchStartY);
 
-        // ★★★ 移動判定閾値 2px ★★★
         if (moveX > 2 || moveY > 2) {
             isDraggingMode = true;
         }
@@ -548,7 +593,8 @@
         
         if (target && target.closest('.cell')) {
             const targetCell = target.closest('.cell');
-            if (targetCell !== dragSrcEl) {
+            // 見えないセルにはドロップさせない
+            if (targetCell !== dragSrcEl && !targetCell.classList.contains('hidden-row')) {
                 targetCell.classList.add('over');
             }
         }
@@ -567,7 +613,8 @@
             
             if (target && target.closest('.cell')) {
                 const targetCell = target.closest('.cell');
-                if (dragSrcEl !== targetCell) {
+                // 見えないセルにはドロップさせない
+                if (dragSrcEl !== targetCell && !targetCell.classList.contains('hidden-row')) {
                     swapCells(dragSrcEl, targetCell);
                 }
             }
