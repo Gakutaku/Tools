@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ラッキーパネル補助ツール</title>
+
+<link rel="icon" href="LuckyPanel_favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="LuckyPanel_favicon.png">
+<style>
+    /* --- 基本変数 --- */
+    :root {
+        /* スマホ横向き時のセルサイズ計算 
+           高さ: (画面高さ - 上部要素計 約90px) ÷ 4行
+           幅  : (画面幅 - 左右の要素と隙間計 約380px) ÷ 6列
+                 ※右端が見切れないよう、余白計算をかなり大きめに取りました
+        */
+        --ls-cell-h: calc((100vh - 90px) / 4);
+        --ls-cell-w: calc((100vw - 380px) / 6);
+        /* 小さい方を採用して絶対にはみ出さないサイズにする */
+        --ls-final-cell: min(var(--ls-cell-h), var(--ls-cell-w));
+    }
+
+    body {
+        font-family: "Helvetica Neue", Arial, sans-serif;
+        background-color: #f8f9fa;
+        color: #333;
+        margin: 0;
+        padding: 0;
+        width: 100vw;
+        height: 100vh;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+        overscroll-behavior: none;
+        -webkit-tap-highlight-color: transparent;
+        display: flex;
+        justify-content: center;
+        overflow: hidden; 
+    }
+
+    h1 {
+        margin: 0;
+        padding: 5px 0;
+        font-size: 1.2rem;
+        color: #444;
+        text-align: center;
+        line-height: 1.2;
+    }
+
+    /* ヒントメッセージ */
+    .portrait-hint {
+        font-size: 0.8rem;
+        color: #ffe0e6;
+        text-align: center;
+        margin-top: 8px;
+        font-weight: bold;
+    }
+
+    /* --- レイアウトコンテナ --- */
+    .layout-container {
+        width: 100%;
+        max-width: 600px;
+        padding: 10px;
+        box-sizing: border-box;
+        height: 100%;
+    }
+
+    /* =========================================
+       ▼▼▼ 縦向き（ポートレート）設定 ▼▼▼ 
+       ========================================= */
+    .layout-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .area-title   { order: 1; width: 100%; display: flex; justify-content: center; flex-shrink: 0; }
+    .area-modes   { order: 2; width: 100%; display: flex; justify-content: center; margin-bottom: 8px; flex-shrink: 0; }
+    .area-actions { order: 3; width: 100%; display: flex; justify-content: center; margin-bottom: 10px; flex-shrink: 0; }
+    .area-status  { order: 4; width: 100%; display: flex; justify-content: center; margin-bottom: 5px; flex-shrink: 0; }
+    .area-grid    { order: 5; width: 100%; display: flex; flex-direction: column; align-items: center; flex-grow: 1; overflow: hidden; }
+
+    /* --- ボタン類 --- */
+    .mode-group {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .action-group {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        width: 100%;
+        max-width: 400px;
+        /* 縦向き時は通常の横並び (Reset左, Next右) */
+        flex-direction: row; 
+    }
+
+    .mode-btn {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+        border: 2px solid #ddd;
+        border-radius: 20px;
+        cursor: pointer;
+        background-color: #fff;
+        color: #555;
+        transition: all 0.2s;
+        font-weight: bold;
+        white-space: nowrap;
+    }
+
+    .mode-btn.active {
+        background-color: #007bff;
+        color: white;
+        border-color: #007bff;
+        box-shadow: 0 2px 5px rgba(0,123,255,0.3);
+    }
+
+    .action-btn {
+        padding: 10px 0;
+        font-size: 1rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        color: white;
+        transition: background-color 0.2s;
+        flex: 1;
+        white-space: nowrap;
+    }
+
+    #resetBtn { background-color: #6c757d; }
+    #nextBtn { background-color: #007bff; }
+
+    .status-bar {
+        font-weight: bold;
+        height: 1.5em;
+        color: #555;
+        display: flex;
+        align-items: center;
+    }
+    .next-char {
+        color: #d35400;
+        font-size: 1.2em;
+        margin-left: 5px;
+    }
+
+    /* --- グリッド盤面 --- */
+    .grid-board {
+        display: grid;
+        gap: 4px;
+        background-color: #555;
+        padding: 6px;
+        border-radius: 8px;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        touch-action: none;
+        height: fit-content; 
+    }
+
+    /* セル設定 (縦画面) */
+    .cell {
+        width: 50px;
+        height: 50px;
+        background-color: #fff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.4rem;
+        font-weight: bold;
+        cursor: pointer;
+        border-radius: 4px;
+        box-shadow: inset 0 0 2px rgba(0,0,0,0.1);
+        transition: transform 0.1s;
+        color: #444;
+        position: relative;
+        box-sizing: border-box;
+        border: 2px solid transparent;
+    }
+
+    @media (max-width: 360px) {
+        .cell { width: 42px; height: 42px; font-size: 1.1rem; }
+    }
+
+    .cell.empty {
+        background-color: #e9ecef;
+        color: transparent;
+        border: 2px solid #e9ecef; 
+    }
+
+    /* --- フィラー（塗りつぶし）セル --- */
+    .cell.filler {
+        background-color: #555; 
+        border: 1px solid #666; 
+        cursor: default;
+        box-shadow: none;
+        pointer-events: none;
+    }
+    
+    /* --- カラーパレット --- */
+    .bg-A { background-color: #ff97a2; }
+    .bg-B { background-color: #85abf1; }
+    .bg-C { background-color: #f7cf86; }
+    .bg-D { background-color: #eaad48; }
+    .bg-E { background-color: #c5af9c; }
+    .bg-F { background-color: #c8e6c9; }
+    .bg-G { background-color: #a3d07d; }
+    .bg-H { background-color: #ffc0cb; }
+    .bg-I { background-color: #b3e5fc; }
+    .bg-J { background-color: #babec7; }
+    .bg-K { background-color: #fbfff0; }
+
+    .bg-star { background-color: #fff176; color: #f57f17; border: 2px solid #fbc02d; }
+    .bg-close { background-color: #e1bee7; color: #8e44ad; font-weight: 900; border: 2px solid #ce93d8; }
+    .cell:not(.empty):not(.bg-star):not(.bg-close):not(.filler) { border: 2px solid rgba(0,0,0,0.1); }
+    
+    .cell.dragging { opacity: 0.6; transform: scale(1.1); z-index: 999; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+    .cell.over { border: 2px dashed #007bff !important; opacity: 0.8; transform: scale(0.95); }
+
+
+    /* =========================================
+       ▼▼▼ 横向き（ランドスケープ）設定 ▼▼▼ 
+       ========================================= */
+    @media (orientation: landscape) {
+        
+        .layout-container {
+            display: grid;
+            /* 左(auto) - 中央(auto:中身に合わせる) - 右(85px固定) */
+            /* column-gap: 20px 確保 */
+            grid-template-columns: auto auto 85px;
+            grid-template-rows: auto auto 1fr;
+            grid-template-areas:
+                "title title title"
+                "status status status"
+                "modes grid actions";
+            
+            width: 100%;
+            height: 100vh;
+            max-width: none;
+            padding: 5px 10px;
+            column-gap: 20px; 
+            row-gap: 2px;
+        }
+
+        .area-title, .area-modes, .area-actions, .area-status, .area-grid {
+            order: initial;
+            margin: 0;
+        }
+
+        .portrait-hint { display: none; }
+
+        .area-title   { grid-area: title; }
+        .area-status  { grid-area: status; }
+        
+        h1 { font-size: 1rem; padding: 2px 0; }
+        .status-bar { height: 1.2em; font-size: 0.9rem; margin-bottom: 2px; }
+
+        /* 左：モード選択（上寄せ・右寄せ） */
+        .area-modes { 
+            grid-area: modes; 
+            height: 100%; 
+            display: flex;
+            align-items: flex-start; 
+            justify-content: flex-end; 
+            /* ★盤面のpadding(6px)と完全に合わせる */
+            padding-top: 6px; 
+        }
+        
+        /* 右：アクション（上寄せ・左寄せ） */
+        .area-actions { 
+            grid-area: actions; 
+            height: 100%; 
+            display: flex;
+            align-items: flex-start; 
+            justify-content: flex-start; 
+            /* ★盤面のpadding(6px)と完全に合わせる */
+            padding-top: 6px; 
+            padding-bottom: 6px; 
+        }
+
+        /* 中央：グリッド（上寄せ・中央配置） */
+        .area-grid { 
+            grid-area: grid; 
+            height: 100%; 
+            display: flex;
+            justify-content: center; 
+            align-items: flex-start; 
+            overflow: hidden; 
+        }
+
+        /* 左側ボタンの並びと形状 */
+        .mode-group {
+            flex-direction: column;
+            gap: 4px; /* ★マス目のgap(4px)と完全に一致させる */
+            width: auto;
+        }
+        .mode-btn { 
+            width: auto; 
+            text-align: center; 
+            padding: 0 12px; /* 横幅は文字列分 */
+            font-size: 1rem;
+            margin: 0;
+            box-sizing: border-box;
+            /* ★高さ: セルと同じにする★ */
+            height: var(--ls-final-cell);
+            /* 中央配置 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 右側ボタンの設定 */
+        .action-group {
+            flex-direction: column-reverse; /* 上=Next, 下=Reset */
+            /* ★両端揃えで上辺と底辺を合わせる */
+            justify-content: space-between;
+            gap: 15px; 
+            width: 100%;
+            /* 親要素(area-actions)の高さ - padding分(12px) と同じ高さになる */
+            height: 100%; 
+            max-width: none;
+        }
+
+        .action-btn { 
+            width: 100%; 
+            padding: 0; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-grow: 1; 
+            font-size: 1.1rem;
+        }
+        
+        /* 盤面: 4行x6列で固定 */
+        .grid-board { 
+            margin: 0; 
+            box-sizing: border-box;
+            /* 4行 + 3gap(12px) + 2padding(12px) */
+            /* これで高さが固定されるので、左右の要素もこれに合わせる */
+            height: calc(var(--ls-final-cell) * 4 + 12px + 12px);
+            width: calc(var(--ls-final-cell) * 6 + 12px + 12px);
+            grid-template-columns: repeat(6, var(--ls-final-cell)) !important;
+            grid-template-rows: repeat(4, var(--ls-final-cell)) !important;
+        }
+        
+        /* セルサイズ最大化 */
+        .cell { 
+            width: var(--ls-final-cell); 
+            height: var(--ls-final-cell); 
+            font-size: calc(var(--ls-final-cell) * 0.5); 
+        }
+    }
+
+</style>
+</head>
+<body>
+
+    <div class="layout-container">
+        <div class="area-title">
+            <h1>ラッキーパネル補助ツール</h1>
+        </div>
+        
+        <div class="area-modes">
+            <div class="mode-group">
+                <button class="mode-btn" id="btnMode1" onclick="selectMode(1)">①甘口</button>
+                <button class="mode-btn" id="btnMode2" onclick="selectMode(2)">②中辛</button>
+                <button class="mode-btn" id="btnMode3" onclick="selectMode(3)">③辛口</button>
+                <button class="mode-btn" id="btnMode4" onclick="selectMode(4)">④激辛</button>
+            </div>
+        </div>
+
+        <div class="area-actions">
+            <div class="action-group" id="actionGroup">
+                <button class="action-btn" id="resetBtn" onclick="resetCurrentGame()">リセット</button>
+                <button class="action-btn" id="nextBtn" onclick="nextMode()">次へ</button>
+            </div>
+        </div>
+
+        <div class="area-status">
+            <div class="status-bar" id="statusBar">
+                次は:<span class="next-char" id="nextCharDisplay">-</span>
+            </div>
+        </div>
+
+        <div class="area-grid">
+            <div class="grid-board" id="grid"></div>
+            <div class="portrait-hint">※横向き推奨</div>
+        </div>
+    </div>
+
+<script>
+    // モード定義
+    // ① 3x4 -> 左右1列(0,5)塗りつぶし (有効列: 1,2,3,4)
+    // ② 4x4 -> 左右1列(0,5)塗りつぶし (有効列: 1,2,3,4)
+    // ③ 4x5 -> 左1列(0)塗りつぶし (有効列: 1,2,3,4,5)
+    // ④ 4x6 -> 全て有効 (有効列: 0,1,2,3,4,5)
+    const modes = {
+        1: { rows: 3, cols: 4, colOffset: 1, chars: ['A', 'B', 'C', 'D', 'E'] },
+        2: { rows: 4, cols: 4, colOffset: 1, chars: ['A', 'B', 'C', 'D', 'E', 'F', 'G'] },
+        3: { rows: 4, cols: 5, colOffset: 1, chars: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'] },
+        4: { rows: 4, cols: 6, colOffset: 0, chars: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K'] }
+    };
+
+    const colorMap = {
+        'A': 'bg-A', 'B': 'bg-B', 'C': 'bg-C', 'D': 'bg-D', 'E': 'bg-E',
+        'F': 'bg-F', 'G': 'bg-G', 'H': 'bg-H', 'I': 'bg-I', 'J': 'bg-J', 'K': 'bg-K',
+        '★': 'bg-star', '〆': 'bg-close'
+    };
+
+    let currentModeId = 1; 
+    let supplyQueue = [];  
+    let dragSrcEl = null;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let isDraggingMode = false;
+
+    const gridElement = document.getElementById('grid');
+    const nextCharDisplay = document.getElementById('nextCharDisplay');
+    const statusBar = document.getElementById('statusBar');
+    const actionGroup = document.getElementById('actionGroup');
+
+    function selectMode(id) {
+        currentModeId = id;
+        document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`btnMode${currentModeId}`).classList.add('active');
+        initGame();
+    }
+
+    function nextMode() {
+        let nextId = currentModeId + 1;
+        if (nextId > 4) nextId = 1;
+        selectMode(nextId);
+    }
+
+    function resetCurrentGame() {
+        initGame();
+    }
+
+    function initGame() {
+        const config = modes[currentModeId];
+        supplyQueue = [];
+        config.chars.forEach(char => { supplyQueue.push(char); supplyQueue.push(char); });
+        supplyQueue.push('★');
+        supplyQueue.push('〆');
+        updateStatus();
+
+        const isLandscape = window.matchMedia("(orientation: landscape)").matches;
+        gridElement.innerHTML = '';
+
+        if (isLandscape) {
+            // --- 横向き: 常に4x6のベースで描画 ---
+            gridElement.style.gridTemplateColumns = `repeat(6, auto)`;
+            gridElement.style.gridTemplateRows = `repeat(4, auto)`;
+            const totalRows = 4;
+            const totalCols = 6;
+
+            for (let r = 0; r < totalRows; r++) {
+                for (let c = 0; c < totalCols; c++) {
+                    // 行: 設定行数未満なら有効
+                    const isRowActive = r < config.rows;
+                    // 列: オフセット位置から有効列数分だけ有効
+                    const isColActive = c >= config.colOffset && c < (config.colOffset + config.cols);
+                    
+                    const isActive = isRowActive && isColActive;
+                    createCell(isActive);
+                }
+            }
+            // 右ボタンの高さ調整はCSSのflex-growで自動追従
+        } else {
+            // --- 縦向き: 必要な数だけ描画 (フィラーなし) ---
+            gridElement.style.gridTemplateColumns = `repeat(${config.cols}, min-content)`;
+            gridElement.style.gridTemplateRows = `repeat(${config.rows}, min-content)`;
+            const totalCells = config.rows * config.cols;
+            for (let i = 0; i < totalCells; i++) {
+                createCell(true);
+            }
+        }
+    }
+    
+    window.addEventListener('resize', () => {
+        initGame();
+    });
+
+    function createCell(isActive) {
+        const cell = document.createElement('div');
+        cell.classList.add('cell'); 
+        
+        if (!isActive) {
+            cell.classList.add('filler');
+        } else {
+            cell.classList.add('empty');
+            addEvents(cell);
+        }
+        gridElement.appendChild(cell);
+    }
+
+    function updateStatus() {
+        if (supplyQueue.length > 0) {
+            nextCharDisplay.textContent = supplyQueue[0];
+            statusBar.style.visibility = 'visible';
+        } else {
+            nextCharDisplay.textContent = "完了";
+            statusBar.style.visibility = 'hidden';
+        }
+    }
+
+    function processInput(cell) {
+        if (!cell.classList.contains('empty') || supplyQueue.length === 0) return;
+
+        const item = supplyQueue.shift();
+        setItemToCell(cell, item);
+
+        if (item === '★' && supplyQueue.length === 1 && supplyQueue[0] === '〆') {
+            const emptyCells = document.querySelectorAll('.cell.empty');
+            if (emptyCells.length === 1) {
+                const lastItem = supplyQueue.shift();
+                setItemToCell(emptyCells[0], lastItem);
+            }
+        }
+        updateStatus();
+    }
+
+    function setItemToCell(cell, item) {
+        cell.textContent = item;
+        cell.className = 'cell'; 
+        if (colorMap[item]) cell.classList.add(colorMap[item]);
+    }
+
+    function swapCells(src, target) {
+        const srcText = src.textContent;
+        const srcClass = src.className;
+        const targetText = target.textContent;
+        const targetClass = target.className;
+
+        const cleanClass = (cls) => cls.replace(' dragging', '').replace(' over', '');
+
+        src.textContent = targetText;
+        src.className = cleanClass(targetClass);
+
+        target.textContent = srcText;
+        target.className = cleanClass(targetClass);
+
+        target.textContent = srcText;
+        target.className = cleanClass(srcClass);
+    }
+
+    function addEvents(cell) {
+        cell.addEventListener('click', (e) => {
+            if (e.detail === 0) return; 
+            processInput(cell);
+        });
+
+        cell.setAttribute('draggable', true);
+        cell.addEventListener('dragstart', handleDragStart);
+        cell.addEventListener('dragover', handleDragOver);
+        cell.addEventListener('drop', handleDrop);
+        cell.addEventListener('dragend', handleDragEnd);
+
+        cell.addEventListener('touchstart', handleTouchStart, {passive: false});
+        cell.addEventListener('touchmove', handleTouchMove, {passive: false});
+        cell.addEventListener('touchend', handleTouchEnd, {passive: false});
+    }
+
+    function handleDragStart(e) {
+        dragSrcEl = this;
+        e.dataTransfer.setData('text/html', this.innerHTML);
+        this.classList.add('dragging');
+    }
+    function handleDragOver(e) {
+        e.preventDefault();
+        return false;
+    }
+    function handleDrop(e) {
+        e.stopPropagation();
+        if (dragSrcEl !== this) swapCells(dragSrcEl, this);
+        return false;
+    }
+    function handleDragEnd() {
+        this.classList.remove('dragging');
+    }
+
+    function handleTouchStart(e) {
+        const touch = e.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        isDraggingMode = false;
+        dragSrcEl = this;
+    }
+
+    function handleTouchMove(e) {
+        const touch = e.touches[0];
+        const moveX = Math.abs(touch.clientX - touchStartX);
+        const moveY = Math.abs(touch.clientY - touchStartY);
+
+        if (moveX > 2 || moveY > 2) {
+            isDraggingMode = true;
+        }
+
+        if (!isDraggingMode) return;
+
+        e.preventDefault();
+        this.classList.add('dragging');
+
+        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+        document.querySelectorAll('.cell').forEach(c => c.classList.remove('over'));
+        
+        if (target && target.closest('.cell')) {
+            const targetCell = target.closest('.cell');
+            if (targetCell !== dragSrcEl && !targetCell.classList.contains('filler')) {
+                targetCell.classList.add('over');
+            }
+        }
+    }
+
+    function handleTouchEnd(e) {
+        this.classList.remove('dragging');
+        document.querySelectorAll('.cell').forEach(c => c.classList.remove('over'));
+
+        if (!isDraggingMode) {
+            e.preventDefault();
+            processInput(this);
+        } else {
+            const touch = e.changedTouches[0];
+            const target = document.elementFromPoint(touch.clientX, touch.clientY);
+            
+            if (target && target.closest('.cell')) {
+                const targetCell = target.closest('.cell');
+                if (dragSrcEl !== targetCell && !targetCell.classList.contains('filler')) {
+                    swapCells(dragSrcEl, targetCell);
+                }
+            }
+        }
+    }
+
+    selectMode(1);
+</script>
+
+</body>
+</html>
