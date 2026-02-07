@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ラッキーパネル補助ツール (スマホ対応)</title>
+<style>
+    body {
+        font-family: "Helvetica Neue", Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background-color: #f8f9fa;
+        padding: 20px;
+        color: #333;
+        /* スマホでの長押し選択やハイライトを無効化 */
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+    }
+
+    h1 {
+        margin-bottom: 10px;
+        font-size: 1.4rem;
+        color: #444;
+    }
+
+    /* コントロールエリア全体 */
+    .controls {
+        margin-bottom: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        align-items: center;
+        background: white;
+        padding: 15px 25px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        width: 90%;
+        max-width: 500px;
+    }
+
+    /* モード選択ボタンのグループ */
+    .mode-group {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    /* 下部のボタンエリア */
+    .action-group {
+        display: flex;
+        gap: 15px;
+    }
+
+    /* モード選択ボタン */
+    .mode-btn {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+        border: 2px solid #ddd;
+        border-radius: 20px;
+        cursor: pointer;
+        background-color: #fff;
+        color: #555;
+        transition: all 0.2s;
+        font-weight: bold;
+    }
+
+    .mode-btn:hover {
+        background-color: #f0f0f0;
+        border-color: #ccc;
+    }
+
+    .mode-btn.active {
+        background-color: #007bff;
+        color: white;
+        border-color: #007bff;
+        box-shadow: 0 2px 5px rgba(0,123,255,0.3);
+    }
+
+    /* 共通ボタン設定 */
+    .action-btn {
+        padding: 10px 30px;
+        font-size: 1rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        color: white;
+        transition: background-color 0.2s;
+        min-width: 100px;
+    }
+
+    #resetBtn { background-color: #6c757d; }
+    #resetBtn:hover { background-color: #5a6268; }
+
+    #nextBtn { background-color: #007bff; }
+    #nextBtn:hover { background-color: #0056b3; }
+
+    /* ステータスバー */
+    .status-bar {
+        margin-bottom: 10px;
+        font-weight: bold;
+        height: 1.5em;
+        color: #555;
+    }
+    .next-char {
+        color: #d35400;
+        font-size: 1.2em;
+        margin-left: 5px;
+    }
+
+    /* グリッド */
+    .grid-container {
+        display: grid;
+        gap: 6px;
+        background-color: #555;
+        padding: 8px;
+        border-radius: 8px;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        touch-action: none; /* グリッド内でのスクロールを防止 */
+    }
+
+    /* マス共通スタイル */
+    .cell {
+        width: 60px;
+        height: 60px;
+        background-color: #fff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.6rem;
+        font-weight: bold;
+        cursor: pointer;
+        border-radius: 4px;
+        box-shadow: inset 0 0 2px rgba(0,0,0,0.1);
+        transition: transform 0.1s;
+        color: #444;
+    }
+
+    /* 空マス */
+    .cell.empty {
+        background-color: #e9ecef;
+        color: transparent;
+    }
+    
+    /* カラーパレット */
+    .bg-A { background-color: #ff97a2; }
+    .bg-B { background-color: #85abf1; }
+    .bg-C { background-color: #f7cf86; }
+    .bg-D { background-color: #eaad48; }
+    .bg-E { background-color: #c5af9c; }
+    .bg-F { background-color: #c8e6c9; }
+    .bg-G { background-color: #a3d07d; }
+    .bg-H { background-color: #ffc0cb; }
+    .bg-I { background-color: #b3e5fc; }
+
+    .bg-star { 
+        background-color: #fff176; 
+        color: #f57f17; 
+        border: 2px solid #fbc02d;
+    }
+    .bg-close { 
+        background-color: #e1bee7; 
+        color: #8e44ad; 
+        font-weight: 900;
+    }
+
+    /* 操作中のスタイル */
+    .cell:not(.empty) { cursor: grab; border: 1px solid rgba(0,0,0,0.05); }
+    .cell.dragging { opacity: 0.6; transform: scale(1.1); z-index: 100; position: relative; }
+    .cell.over { border: 2px dashed #007bff !important; opacity: 0.8; }
+
+</style>
+</head>
+<body>
+
+    <h1>ラッキーパネル補助ツール</h1>
+    
+    <div class="controls">
+        <div class="mode-group">
+            <button class="mode-btn" id="btnMode1" onclick="selectMode(1)">① 3×4 (A-E)</button>
+            <button class="mode-btn" id="btnMode2" onclick="selectMode(2)">② 4×4 (A-G)</button>
+            <button class="mode-btn" id="btnMode3" onclick="selectMode(3)">③ 4×5 (A-I)</button>
+        </div>
+        <div class="action-group">
+            <button class="action-btn" id="resetBtn" onclick="resetCurrentGame()">リセット</button>
+            <button class="action-btn" id="nextBtn" onclick="nextMode()">次へ</button>
+        </div>
+    </div>
+
+    <div class="status-bar" id="statusBar">
+        次は:<span class="next-char" id="nextCharDisplay">-</span>
+    </div>
+
+    <div class="grid-container" id="grid">
+        </div>
+
+<script>
+    const modes = {
+        1: { rows: 3, cols: 4, chars: ['A', 'B', 'C', 'D', 'E'] },
+        2: { rows: 4, cols: 4, chars: ['A', 'B', 'C', 'D', 'E', 'F', 'G'] },
+        3: { rows: 4, cols: 5, chars: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'] }
+    };
+
+    const colorMap = {
+        'A': 'bg-A', 'B': 'bg-B', 'C': 'bg-C', 'D': 'bg-D', 'E': 'bg-E',
+        'F': 'bg-F', 'G': 'bg-G', 'H': 'bg-H', 'I': 'bg-I',
+        '★': 'bg-star', '〆': 'bg-close'
+    };
+
+    let currentModeId = 1; 
+    let supplyQueue = [];  
+    let dragSrcEl = null;
+
+    const gridElement = document.getElementById('grid');
+    const nextCharDisplay = document.getElementById('nextCharDisplay');
+    const statusBar = document.getElementById('statusBar');
+
+    // --- メイン処理 ---
+
+    function selectMode(id) {
+        currentModeId = id;
+        updateButtonStyles();
+        initGame();
+    }
+
+    function updateButtonStyles() {
+        document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`btnMode${currentModeId}`).classList.add('active');
+    }
+
+    function nextMode() {
+        let nextId = currentModeId + 1;
+        if (nextId > 3) nextId = 1;
+        selectMode(nextId);
+    }
+
+    function resetCurrentGame() {
+        initGame();
+    }
+
+    function initGame() {
+        const config = modes[currentModeId];
+        supplyQueue = [];
+        config.chars.forEach(char => { supplyQueue.push(char); supplyQueue.push(char); });
+        supplyQueue.push('★');
+        supplyQueue.push('〆');
+
+        updateStatus();
+
+        gridElement.style.gridTemplateColumns = `repeat(${config.cols}, 60px)`;
+        gridElement.style.gridTemplateRows = `repeat(${config.rows}, 60px)`;
+        gridElement.innerHTML = '';
+
+        const totalCells = config.rows * config.cols;
+        for (let i = 0; i < totalCells; i++) {
+            createCell();
+        }
+    }
+
+    function createCell() {
+        const cell = document.createElement('div');
+        cell.classList.add('cell', 'empty');
+        addEvents(cell);
+        gridElement.appendChild(cell);
+    }
+
+    function updateStatus() {
+        if (supplyQueue.length > 0) {
+            nextCharDisplay.textContent = supplyQueue[0];
+            statusBar.style.visibility = 'visible';
+        } else {
+            nextCharDisplay.textContent = "完了";
+            statusBar.style.visibility = 'hidden';
+        }
+    }
+
+    // セルの入れ替え処理（共通関数）
+    function swapCells(srcCell, targetCell) {
+        const srcText = srcCell.textContent;
+        const srcClass = srcCell.className;
+        const targetText = targetCell.textContent;
+        const targetClass = targetCell.className;
+
+        const getBaseClasses = (className) => className.replace(' dragging', '').replace(' over', '');
+
+        srcCell.textContent = targetText;
+        srcCell.className = getBaseClasses(targetClass);
+
+        targetCell.textContent = srcText;
+        targetCell.className = getBaseClasses(srcClass);
+    }
+
+    function setItemToCell(cell, item) {
+        cell.textContent = item;
+        cell.className = 'cell'; 
+        if (colorMap[item]) cell.classList.add(colorMap[item]);
+    }
+
+    // --- イベントリスナー登録 (マウス & タッチ両対応) ---
+    function addEvents(cell) {
+        // クリック配置
+        cell.addEventListener('click', handleCellClick);
+
+        // マウス用ドラッグイベント
+        cell.setAttribute('draggable', true);
+        cell.addEventListener('dragstart', handleDragStart);
+        cell.addEventListener('dragenter', handleDragEnter);
+        cell.addEventListener('dragover', handleDragOver);
+        cell.addEventListener('dragleave', handleDragLeave);
+        cell.addEventListener('drop', handleDrop);
+        cell.addEventListener('dragend', handleDragEnd);
+
+        // スマホ(タッチ)用イベント
+        cell.addEventListener('touchstart', handleTouchStart, {passive: false});
+        cell.addEventListener('touchmove', handleTouchMove, {passive: false});
+        cell.addEventListener('touchend', handleTouchEnd);
+    }
+
+    function handleCellClick(e) {
+        // ドラッグ終了直後のクリック発火を防ぐフラグチェック等は簡易実装のため省略
+        const cell = e.target;
+        if (!cell.classList.contains('empty') || supplyQueue.length === 0) return;
+
+        const item = supplyQueue.shift();
+        setItemToCell(cell, item);
+
+        if (item === '★' && supplyQueue.length === 1 && supplyQueue[0] === '〆') {
+            const emptyCells = document.querySelectorAll('.cell.empty');
+            if (emptyCells.length === 1) {
+                const lastItem = supplyQueue.shift();
+                setItemToCell(emptyCells[0], lastItem);
+            }
+        }
+        updateStatus();
+    }
+
+    // --- マウス用ハンドラ ---
+    function handleDragStart(e) {
+        dragSrcEl = this;
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/html', this.innerHTML);
+        this.classList.add('dragging');
+    }
+    function handleDragOver(e) {
+        if (e.preventDefault) e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        return false;
+    }
+    function handleDragEnter() { this.classList.add('over'); }
+    function handleDragLeave() { this.classList.remove('over'); }
+    
+    function handleDrop(e) {
+        if (e.stopPropagation) e.stopPropagation();
+        if (dragSrcEl !== this) swapCells(dragSrcEl, this);
+        return false;
+    }
+    function handleDragEnd() {
+        this.classList.remove('dragging');
+        document.querySelectorAll('.cell').forEach(c => c.classList.remove('over'));
+    }
+
+    // --- スマホ(タッチ)用ハンドラ ---
+    function handleTouchStart(e) {
+        // 空の場合はドラッグさせない等の制御も可能ですが、移動のため許可します
+        dragSrcEl = this;
+        this.classList.add('dragging');
+    }
+
+    function handleTouchMove(e) {
+        // 画面スクロールを防ぐ（これが無いとドラッグ操作時に画面が動いてしまう）
+        e.preventDefault(); 
+        
+        // 指の下にある要素を取得してハイライトする（視覚補助）
+        const touch = e.touches[0];
+        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+        
+        // 全セルのハイライト解除
+        document.querySelectorAll('.cell').forEach(c => c.classList.remove('over'));
+
+        if (target && target.closest('.cell')) {
+            const cell = target.closest('.cell');
+            if (cell !== dragSrcEl) {
+                cell.classList.add('over');
+            }
+        }
+    }
+
+    function handleTouchEnd(e) {
+        e.preventDefault();
+        this.classList.remove('dragging');
+        
+        // 全セルのハイライト解除
+        document.querySelectorAll('.cell').forEach(c => c.classList.remove('over'));
+
+        // 指を離した場所の要素を取得
+        const touch = e.changedTouches[0];
+        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+
+        if (target && target.closest('.cell')) {
+            const targetCell = target.closest('.cell');
+            if (dragSrcEl !== targetCell) {
+                swapCells(dragSrcEl, targetCell);
+            }
+        }
+    }
+
+    // 初回起動
+    selectMode(1);
+
+</script>
+
+</body>
+</html>
