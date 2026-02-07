@@ -10,9 +10,12 @@
 <style>
     /* --- 基本変数 --- */
     :root {
-        /* スマホ横向き時のセルサイズ計算 */
+        /* スマホ横向き時のセルサイズ計算 
+           高さ: (画面高さ - 上部要素計 約90px) ÷ 4行
+           幅  : (画面幅 - 左右サイドバー最小確保 220px) ÷ 6列
+        */
         --ls-cell-h: calc((100vh - 90px) / 4);
-        --ls-cell-w: calc((100vw - 240px) / 6);
+        --ls-cell-w: calc((100vw - 220px) / 6);
         --ls-final-cell: min(var(--ls-cell-h), var(--ls-cell-w));
     }
 
@@ -31,28 +34,28 @@
         -webkit-tap-highlight-color: transparent;
         display: flex;
         justify-content: center;
-        overflow: hidden; /* スクロール禁止 */
+        overflow: hidden; 
     }
 
     h1 {
         margin: 0;
-        padding: 5px 0 0 0;
+        padding: 5px 0;
         font-size: 1.2rem;
         color: #444;
         text-align: center;
         line-height: 1.2;
     }
 
-    /* ▼▼▼ 追加：横向き推奨メッセージ ▼▼▼ */
+    /* ヒントメッセージ */
     .portrait-hint {
-        font-size: 0.7rem;
-        color: #ffccd5; /* 気付くか気付かないかの薄いピンク */
+        font-size: 0.8rem;
+        color: #ffe0e6; /* かなり薄いピンク */
         text-align: center;
-        margin-bottom: 5px;
-        font-weight: normal;
+        margin-top: 8px;
+        font-weight: bold;
     }
 
-    /* --- レイアウトコンテナ (共通) --- */
+    /* --- レイアウトコンテナ --- */
     .layout-container {
         width: 100%;
         max-width: 600px;
@@ -70,12 +73,20 @@
         align-items: center;
     }
 
-    /* 表示順序 */
-    .area-title   { order: 1; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; }
+    /* 縦向き表示順序: 
+       1. タイトル
+       2. モード選択
+       3. アクション(Reset/Next)
+       4. ステータス(次は:A)
+       5. グリッド
+       6. ヒント(横向き推奨) 
+    */
+    .area-title   { order: 1; width: 100%; display: flex; justify-content: center; flex-shrink: 0; }
     .area-modes   { order: 2; width: 100%; display: flex; justify-content: center; margin-bottom: 8px; flex-shrink: 0; }
     .area-actions { order: 3; width: 100%; display: flex; justify-content: center; margin-bottom: 10px; flex-shrink: 0; }
     .area-status  { order: 4; width: 100%; display: flex; justify-content: center; margin-bottom: 5px; flex-shrink: 0; }
-    .area-grid    { order: 5; width: 100%; display: flex; justify-content: center; align-items: flex-start; flex-grow: 1; overflow: hidden; }
+    .area-grid    { order: 5; width: 100%; display: flex; flex-direction: column; align-items: center; flex-grow: 1; overflow: hidden; }
+    /* ヒントはgridエリア内に配置して制御するか、HTML順序に任せる */
 
     /* --- ボタン類 --- */
     .mode-group {
@@ -193,7 +204,7 @@
     .bg-G { background-color: #a3d07d; }
     .bg-H { background-color: #ffc0cb; }
     .bg-I { background-color: #b3e5fc; }
-    .bg-J { background-color: #babec7; }
+    .bg-J { background-color: #babec7; } /* 指定色 */
     .bg-K { background-color: #fbfff0; }
 
     .bg-star { background-color: #fff176; color: #f57f17; border: 2px solid #fbc02d; }
@@ -211,7 +222,11 @@
         
         .layout-container {
             display: grid;
-            grid-template-columns: 110px 1fr 110px;
+            /* 1fr (左) - 固定幅(中央) - 1fr (右) */
+            /* 中央は「最大セルサイズ * 6列 + gap等」で固定し、
+               左右は残りのスペースを1frで埋める。
+               これによりモードが変わっても幅が変動しない。 */
+            grid-template-columns: 1fr calc(var(--ls-final-cell) * 6 + 32px) 1fr;
             grid-template-rows: auto auto 1fr;
             grid-template-areas:
                 "title title title"
@@ -231,14 +246,13 @@
             margin: 0;
         }
 
+        /* 横向き時はヒント非表示 */
+        .portrait-hint { display: none; }
+
         .area-title   { grid-area: title; }
         .area-status  { grid-area: status; }
         
         h1 { font-size: 1rem; padding: 2px 0; }
-        
-        /* ▼▼▼ 横向き時はヒントを消す ▼▼▼ */
-        .portrait-hint { display: none; }
-
         .status-bar { height: 1.2em; font-size: 0.9rem; margin-bottom: 2px; }
 
         /* 左：モード選択（上寄せ） */
@@ -249,45 +263,72 @@
             align-items: flex-start; 
             justify-content: flex-start;
             padding-top: 6px; 
+            padding-right: 10px; /* 隙間 */
         }
         
-        /* 右：アクション（上寄せ・縦幅いっぱい） */
+        /* 右：アクション（上寄せ） */
         .area-actions { 
             grid-area: actions; 
             height: 100%; 
             display: flex;
-            justify-content: center;
+            align-items: flex-start; 
+            justify-content: flex-end; 
             padding-top: 6px; 
-            padding-bottom: 6px;
-            align-items: stretch;
+            padding-left: 10px; /* 隙間 */
         }
 
-        /* 中央：グリッド（上寄せ・中央配置） */
+        /* 中央：グリッド */
         .area-grid { 
             grid-area: grid; 
             height: 100%; 
             display: flex;
-            justify-content: center; 
-            align-items: flex-start; 
+            justify-content: center; /* 常に中央に配置 */
+            align-items: flex-start; /* 上寄せ */
             overflow: hidden; 
         }
 
-        /* ボタンの並び */
+        /* 左側ボタンの並びと最大化 */
         .mode-group {
             flex-direction: column;
             gap: 6px;
             width: 100%;
         }
-        .mode-btn { width: 100%; text-align: center; padding: 6px 10px; }
+        .mode-btn { 
+            width: 100%; 
+            text-align: center; 
+            padding: 8px 0; 
+            font-size: 1.2rem; /* 文字拡大 */
+        }
 
-        /* --- 横向き時のアクションボタン設定 --- */
+        /* 右側ボタンの設定 */
         .action-group {
-            flex-direction: column-reverse; /* 下がリセット、上が次へ */
-            gap: 30px; 
+            flex-direction: column; /* 上が次へ、下がリセット */
+            justify-content: space-between; /* 上下端に配置 */
+            gap: 15px; 
             width: 100%;
-            height: 100%; 
-            box-sizing: border-box;
-            max-width: none;
+            /* 高さ制御：
+               .grid-boardの高さに合わせる必要がある。
+               JSを使わずCSSのみで完結させるため、
+               grid-boardの高さは行数によって変わる(3行or4行)。
+               しかし、action-groupは親(area-actions)の高さいっぱい(画面下まで)ある。
+               リセットボタンの下辺をグリッドの下辺に合わせるため、
+               ここではaction-group自体の高さを制限するのではなく、
+               下ボタンのマージンや配置で調整するが、
+               「行数連動」させる最も確実な方法は、
+               JSでaction-groupの高さをgridに合わせること。
+               
+               しかし「スクロール不可・CSSのみ」でやるなら、
+               GridのRow定義をモード数に合わせて固定するのがベスト。
+               ここでは「高さ連動」を擬似的に行うため、
+               action-groupの高さを「中身依存」ではなく
+               「grid-board」と同じ高さになるようにしたいが、
+               兄弟要素の高さ取得はCSSでは難しい。
+               
+               妥協案：ボタンコンテナの高さを「セルサイズ * 行数 + gap」で計算指定する。
+            */
+            height: auto; 
+            /* JSで動的に高さをセットする形がベストだが、
+               ここではCSS変数と calc で擬似的に行う */
         }
 
         .action-btn { 
@@ -297,11 +338,20 @@
             justify-content: center;
             align-items: center;
             flex-grow: 1; 
-            max-height: 50%;
+            font-size: 1.2rem;
+            /* ボタン自体の高さ確保 */
+            min-height: calc(var(--ls-final-cell) * 1.5);
         }
         
         /* 盤面 */
-        .grid-board { margin: 0; }
+        .grid-board { 
+            margin: 0; 
+            /* 幅を固定（6列分）して、モードが小さくてもコンテナ幅を変えない */
+            width: calc(var(--ls-final-cell) * 6 + 20px);
+            box-sizing: border-box;
+            /* 中身が少ない(3x4)ときは中央寄せ */
+            justify-content: center;
+        }
         
         /* セルサイズ最大化 */
         .cell { 
@@ -319,7 +369,6 @@
         
         <div class="area-title">
             <h1>ラッキーパネル補助ツール</h1>
-            <div class="portrait-hint">※横向き推奨</div>
         </div>
         
         <div class="area-modes">
@@ -332,9 +381,9 @@
         </div>
 
         <div class="area-actions">
-            <div class="action-group">
-                <button class="action-btn" id="resetBtn" onclick="resetCurrentGame()">リセット</button>
+            <div class="action-group" id="actionGroup">
                 <button class="action-btn" id="nextBtn" onclick="nextMode()">次へ</button>
+                <button class="action-btn" id="resetBtn" onclick="resetCurrentGame()">リセット</button>
             </div>
         </div>
 
@@ -346,6 +395,7 @@
 
         <div class="area-grid">
             <div class="grid-board" id="grid"></div>
+            <div class="portrait-hint">※横向き推奨</div>
         </div>
 
     </div>
@@ -375,6 +425,7 @@
     const gridElement = document.getElementById('grid');
     const nextCharDisplay = document.getElementById('nextCharDisplay');
     const statusBar = document.getElementById('statusBar');
+    const actionGroup = document.getElementById('actionGroup'); // 追加
 
     function selectMode(id) {
         currentModeId = id;
@@ -407,6 +458,39 @@
         const totalCells = config.rows * config.cols;
         for (let i = 0; i < totalCells; i++) {
             createCell();
+        }
+
+        // --- 横向き時のボタン高さ調整 ---
+        // グリッドの行数に合わせて、右側ボタンエリアの高さを設定する
+        // CSS変数 --ls-final-cell はJSからは直接取れないため、計算ロジックを入れるか、
+        // 簡易的に行数に応じた高さを style でセットする
+        if (window.matchMedia("(orientation: landscape)").matches) {
+            updateActionGroupHeight(config.rows);
+        } else {
+            actionGroup.style.height = ''; // 縦向きはリセット
+        }
+    }
+    
+    // ウィンドウリサイズ時も高さ調整
+    window.addEventListener('resize', () => {
+        const config = modes[currentModeId];
+        if (window.matchMedia("(orientation: landscape)").matches) {
+            updateActionGroupHeight(config.rows);
+        } else {
+            actionGroup.style.height = '';
+        }
+    });
+
+    function updateActionGroupHeight(rows) {
+        // 現在のセルサイズを取得（グリッド内の最初のセルから計測）
+        const sampleCell = document.querySelector('.cell');
+        if (sampleCell) {
+            const cellSize = sampleCell.getBoundingClientRect().height;
+            // 行数 * セル高さ + 隙間(4px) * (行数-1) + パディング(6px*2)
+            const gap = 4;
+            const padding = 12;
+            const totalHeight = (cellSize * rows) + (gap * (rows - 1)) + padding;
+            actionGroup.style.height = `${totalHeight}px`;
         }
     }
 
