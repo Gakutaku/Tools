@@ -10,12 +10,13 @@
 <style>
     /* --- 基本設定 --- */
     :root {
-        /* スマホ横向き時の計算用変数 */
-        /* ヘッダー類(約70px)と余白を除いた高さを4行で割る */
-        --ls-cell-h: calc((100vh - 80px) / 4);
-        /* 左右のボタンエリア(約220px)と余白を除いた幅を6列で割る */
-        --ls-cell-w: calc((100vw - 240px) / 6);
-        /* 上記の小さい方を採用してセルサイズとする */
+        /* スマホ横向き時のセルサイズ計算 
+          高さ: (画面高さ - ヘッダー類約75px) ÷ 4行
+          幅  : (画面幅 - 左右サイドバー計220px) ÷ 6列
+        */
+        --ls-cell-h: calc((100vh - 75px) / 4);
+        --ls-cell-w: calc((100vw - 230px) / 6);
+        /* 小さい方を採用してはみ出し防止 */
         --ls-final-cell: min(var(--ls-cell-h), var(--ls-cell-w));
     }
 
@@ -34,7 +35,7 @@
         -webkit-tap-highlight-color: transparent;
         display: flex;
         justify-content: center;
-        overflow: hidden; /* スクロール防止 */
+        overflow: hidden; /* スクロール完全禁止 */
     }
 
     h1 {
@@ -43,6 +44,7 @@
         font-size: 1.2rem;
         color: #444;
         text-align: center;
+        line-height: 1.2;
     }
 
     /* --- レイアウトコンテナ (縦画面用デフォルト) --- */
@@ -129,9 +131,9 @@
     /* --- グリッド盤面 --- */
     .grid-board {
         display: grid;
-        gap: 4px;
+        gap: 3px; /* 隙間を少し詰める */
         background-color: #555;
-        padding: 6px;
+        padding: 5px;
         border-radius: 8px;
         box-shadow: 0 6px 12px rgba(0,0,0,0.15);
         touch-action: none;
@@ -198,11 +200,9 @@
     @media (orientation: landscape) {
         
         .layout-container {
-            /* 全体を「ヘッダー」と「コンテンツ」に分ける */
             display: grid;
-            /* 左ボタン(110px) - メイン(自動) - 右ボタン(110px) */
-            grid-template-columns: 110px 1fr 110px;
-            /* タイトル行 - ステータス行 - メイン行(残り全部) */
+            /* 左(105px) - 中央(残り) - 右(105px) */
+            grid-template-columns: 105px 1fr 105px;
             grid-template-rows: auto auto 1fr;
             grid-template-areas:
                 "title title title"
@@ -212,77 +212,71 @@
             width: 100%;
             height: 100vh;
             max-width: none;
-            padding: 5px 20px;
-            gap: 5px; /* エリア間の隙間 */
+            padding: 5px 10px; /* 左右余白を少し詰める */
+            gap: 2px;
         }
 
         /* エリア配置 */
         .area-title   { grid-area: title; }
         .area-status  { grid-area: status; }
         
-        /* コンテンツ行の設定 */
+        /* タイトル・ステータス微調整 */
+        h1 { font-size: 1rem; padding: 2px 0; }
+        .status-bar { height: 1.2em; font-size: 0.9rem; margin-bottom: 2px; }
+
+        /* 左：モード選択（上寄せ） */
         .area-modes   { 
             grid-area: modes; 
             height: 100%; 
-            /* Flexboxで上寄せにする */
             display: flex;
-            align-items: flex-start; /* 横軸：左寄せ */
-            justify-content: flex-start; /* 縦軸：上寄せ (columnなので) */
-            padding-top: 6px; /* 盤面のpaddingと合わせて微調整 */
+            align-items: flex-start; /* 左寄せ */
+            justify-content: flex-start; /* 上寄せ */
+            padding-top: 5px; /* 盤面のpaddingと合わせる */
         }
         
+        /* 右：アクション（中央寄せ） */
         .area-actions { 
             grid-area: actions; 
             height: 100%; 
             display: flex;
-            align-items: flex-end; /* 右側は下寄せ等のアレンジも可だが、上揃えなら flex-start */
-            justify-content: flex-start;
-            padding-top: 6px;
+            align-items: flex-end; /* 右寄せ */
+            justify-content: center; /* ★縦方向中央寄せ★ */
+            padding-bottom: 20px; /* 少し下げる場合 */
         }
 
+        /* 中央：グリッド（上寄せ・中央配置） */
         .area-grid    { 
             grid-area: grid; 
             height: 100%; 
             display: flex;
-            justify-content: center; /* 中央配置 */
+            justify-content: center; 
             align-items: flex-start; /* 上寄せ */
-            overflow: hidden; /* はみ出し防止 */
+            overflow: hidden; 
         }
 
-        /* 左側（モード選択）を縦並びに */
+        /* ボタンの並び */
         .mode-group {
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
             width: 100%;
         }
-        .mode-btn {
-            width: 100%;
-            text-align: center;
-        }
+        .mode-btn { width: 100%; text-align: center; padding: 6px 10px; }
 
-        /* 右側（アクション）を縦並びに */
         .action-group {
             flex-direction: column;
-            gap: 12px;
+            gap: 30px; /* ★ボタン間隔を離す★ */
             width: 100%;
         }
-        .action-btn {
-            width: 100%;
-        }
-
-        /* タイトル・ステータス微調整 */
-        h1 { font-size: 1rem; padding: 2px 0; }
-        .status-bar { height: 1.2em; font-size: 0.9rem; }
+        .action-btn { width: 100%; }
         
-        /* 盤面のマージン調整 */
+        /* 盤面 */
         .grid-board { margin: 0; }
         
-        /* ★★★ セルサイズの自動最大化 ★★★ */
-        /* 計算した変数を適用 */
+        /* ★セルサイズ最大化（はみ出し防止計算済み） */
         .cell { 
             width: var(--ls-final-cell); 
             height: var(--ls-final-cell); 
-            font-size: calc(var(--ls-final-cell) * 0.5); /* 文字サイズも連動 */
+            font-size: calc(var(--ls-final-cell) * 0.5); 
         }
     }
 
@@ -375,7 +369,6 @@
         supplyQueue.push('〆');
         updateStatus();
 
-        // 激辛モード等の列数制御
         gridElement.style.gridTemplateColumns = `repeat(${config.cols}, min-content)`;
         gridElement.innerHTML = '';
 
@@ -488,7 +481,7 @@
         const moveY = Math.abs(touch.clientY - touchStartY);
 
         /* チューニングポイント */
-        if (moveX > 2 || moveY > 2) {
+        if (moveX > 5 || moveY > 5) {
             isDraggingMode = true;
         }
 
