@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ラッキーパネル補助ツール (スマホ対応)</title>
+<title>ラッキーパネル補助ツール (iOS完全対応)</title>
 <style>
     body {
         font-family: "Helvetica Neue", Arial, sans-serif;
@@ -13,10 +13,10 @@
         background-color: #f8f9fa;
         padding: 20px;
         color: #333;
-        /* スマホでの長押し選択やハイライトを無効化 */
         -webkit-user-select: none;
         user-select: none;
         -webkit-touch-callout: none;
+        overscroll-behavior: none; /* バウンススクロール防止 */
     }
 
     h1 {
@@ -25,7 +25,7 @@
         color: #444;
     }
 
-    /* コントロールエリア全体 */
+    /* コントロールエリア */
     .controls {
         margin-bottom: 15px;
         display: flex;
@@ -40,7 +40,6 @@
         max-width: 500px;
     }
 
-    /* モード選択ボタンのグループ */
     .mode-group {
         display: flex;
         gap: 8px;
@@ -48,13 +47,11 @@
         justify-content: center;
     }
 
-    /* 下部のボタンエリア */
     .action-group {
         display: flex;
         gap: 15px;
     }
 
-    /* モード選択ボタン */
     .mode-btn {
         padding: 8px 12px;
         font-size: 0.9rem;
@@ -67,11 +64,6 @@
         font-weight: bold;
     }
 
-    .mode-btn:hover {
-        background-color: #f0f0f0;
-        border-color: #ccc;
-    }
-
     .mode-btn.active {
         background-color: #007bff;
         color: white;
@@ -79,7 +71,6 @@
         box-shadow: 0 2px 5px rgba(0,123,255,0.3);
     }
 
-    /* 共通ボタン設定 */
     .action-btn {
         padding: 10px 30px;
         font-size: 1rem;
@@ -92,12 +83,8 @@
     }
 
     #resetBtn { background-color: #6c757d; }
-    #resetBtn:hover { background-color: #5a6268; }
-
     #nextBtn { background-color: #007bff; }
-    #nextBtn:hover { background-color: #0056b3; }
 
-    /* ステータスバー */
     .status-bar {
         margin-bottom: 10px;
         font-weight: bold;
@@ -118,10 +105,9 @@
         padding: 8px;
         border-radius: 8px;
         box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-        touch-action: none; /* グリッド内でのスクロールを防止 */
+        touch-action: none; /* ブラウザ標準のスクロール操作などを無効化 */
     }
 
-    /* マス共通スタイル */
     .cell {
         width: 60px;
         height: 60px;
@@ -136,15 +122,14 @@
         box-shadow: inset 0 0 2px rgba(0,0,0,0.1);
         transition: transform 0.1s;
         color: #444;
+        position: relative;
     }
 
-    /* 空マス */
     .cell.empty {
         background-color: #e9ecef;
         color: transparent;
     }
     
-    /* カラーパレット */
     .bg-A { background-color: #ff97a2; }
     .bg-B { background-color: #85abf1; }
     .bg-C { background-color: #f7cf86; }
@@ -155,21 +140,23 @@
     .bg-H { background-color: #ffc0cb; }
     .bg-I { background-color: #b3e5fc; }
 
-    .bg-star { 
-        background-color: #fff176; 
-        color: #f57f17; 
-        border: 2px solid #fbc02d;
-    }
-    .bg-close { 
-        background-color: #e1bee7; 
-        color: #8e44ad; 
-        font-weight: 900;
-    }
+    .bg-star { background-color: #fff176; color: #f57f17; border: 2px solid #fbc02d; }
+    .bg-close { background-color: #e1bee7; color: #8e44ad; font-weight: 900; }
 
-    /* 操作中のスタイル */
     .cell:not(.empty) { cursor: grab; border: 1px solid rgba(0,0,0,0.05); }
-    .cell.dragging { opacity: 0.6; transform: scale(1.1); z-index: 100; position: relative; }
-    .cell.over { border: 2px dashed #007bff !important; opacity: 0.8; }
+    
+    /* ドラッグ中の見た目 */
+    .cell.dragging {
+        opacity: 0.6;
+        transform: scale(1.1);
+        z-index: 999;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+    .cell.over {
+        border: 2px dashed #007bff !important;
+        opacity: 0.8;
+        transform: scale(0.95);
+    }
 
 </style>
 </head>
@@ -193,8 +180,7 @@
         次は:<span class="next-char" id="nextCharDisplay">-</span>
     </div>
 
-    <div class="grid-container" id="grid">
-        </div>
+    <div class="grid-container" id="grid"></div>
 
 <script>
     const modes = {
@@ -213,21 +199,22 @@
     let supplyQueue = [];  
     let dragSrcEl = null;
 
+    // タッチ操作判定用の変数
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let isDraggingMode = false;
+
     const gridElement = document.getElementById('grid');
     const nextCharDisplay = document.getElementById('nextCharDisplay');
     const statusBar = document.getElementById('statusBar');
 
-    // --- メイン処理 ---
+    // --- ロジック ---
 
     function selectMode(id) {
         currentModeId = id;
-        updateButtonStyles();
-        initGame();
-    }
-
-    function updateButtonStyles() {
         document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
         document.getElementById(`btnMode${currentModeId}`).classList.add('active');
+        initGame();
     }
 
     function nextMode() {
@@ -246,7 +233,6 @@
         config.chars.forEach(char => { supplyQueue.push(char); supplyQueue.push(char); });
         supplyQueue.push('★');
         supplyQueue.push('〆');
-
         updateStatus();
 
         gridElement.style.gridTemplateColumns = `repeat(${config.cols}, 60px)`;
@@ -276,56 +262,14 @@
         }
     }
 
-    // セルの入れ替え処理（共通関数）
-    function swapCells(srcCell, targetCell) {
-        const srcText = srcCell.textContent;
-        const srcClass = srcCell.className;
-        const targetText = targetCell.textContent;
-        const targetClass = targetCell.className;
-
-        const getBaseClasses = (className) => className.replace(' dragging', '').replace(' over', '');
-
-        srcCell.textContent = targetText;
-        srcCell.className = getBaseClasses(targetClass);
-
-        targetCell.textContent = srcText;
-        targetCell.className = getBaseClasses(srcClass);
-    }
-
-    function setItemToCell(cell, item) {
-        cell.textContent = item;
-        cell.className = 'cell'; 
-        if (colorMap[item]) cell.classList.add(colorMap[item]);
-    }
-
-    // --- イベントリスナー登録 (マウス & タッチ両対応) ---
-    function addEvents(cell) {
-        // クリック配置
-        cell.addEventListener('click', handleCellClick);
-
-        // マウス用ドラッグイベント
-        cell.setAttribute('draggable', true);
-        cell.addEventListener('dragstart', handleDragStart);
-        cell.addEventListener('dragenter', handleDragEnter);
-        cell.addEventListener('dragover', handleDragOver);
-        cell.addEventListener('dragleave', handleDragLeave);
-        cell.addEventListener('drop', handleDrop);
-        cell.addEventListener('dragend', handleDragEnd);
-
-        // スマホ(タッチ)用イベント
-        cell.addEventListener('touchstart', handleTouchStart, {passive: false});
-        cell.addEventListener('touchmove', handleTouchMove, {passive: false});
-        cell.addEventListener('touchend', handleTouchEnd);
-    }
-
-    function handleCellClick(e) {
-        // ドラッグ終了直後のクリック発火を防ぐフラグチェック等は簡易実装のため省略
-        const cell = e.target;
+    // ■ 入力処理（共通）
+    function processInput(cell) {
         if (!cell.classList.contains('empty') || supplyQueue.length === 0) return;
 
         const item = supplyQueue.shift();
         setItemToCell(cell, item);
 
+        // ★が出た時の自動入力
         if (item === '★' && supplyQueue.length === 1 && supplyQueue[0] === '〆') {
             const emptyCells = document.querySelectorAll('.cell.empty');
             if (emptyCells.length === 1) {
@@ -336,77 +280,134 @@
         updateStatus();
     }
 
-    // --- マウス用ハンドラ ---
+    function setItemToCell(cell, item) {
+        cell.textContent = item;
+        cell.className = 'cell'; 
+        if (colorMap[item]) cell.classList.add(colorMap[item]);
+    }
+
+    // ■ 入れ替え処理（共通）
+    function swapCells(src, target) {
+        const srcText = src.textContent;
+        const srcClass = src.className;
+        const targetText = target.textContent;
+        const targetClass = target.className;
+
+        const cleanClass = (cls) => cls.replace(' dragging', '').replace(' over', '');
+
+        src.textContent = targetText;
+        src.className = cleanClass(targetClass);
+
+        target.textContent = srcText;
+        target.className = cleanClass(srcClass);
+    }
+
+    // --- イベントリスナー ---
+    function addEvents(cell) {
+        // PC用クリック
+        cell.addEventListener('click', (e) => {
+            // タッチ操作時はclickイベントを無視する（二重発火防止）
+            if (e.detail === 0) return; // detailが0の場合はプログラム的なクリック等の可能性
+            processInput(cell);
+        });
+
+        // PC用ドラッグ
+        cell.setAttribute('draggable', true);
+        cell.addEventListener('dragstart', handleDragStart);
+        cell.addEventListener('dragover', handleDragOver);
+        cell.addEventListener('drop', handleDrop);
+        cell.addEventListener('dragend', handleDragEnd);
+
+        // スマホ用タッチ
+        cell.addEventListener('touchstart', handleTouchStart, {passive: false});
+        cell.addEventListener('touchmove', handleTouchMove, {passive: false});
+        cell.addEventListener('touchend', handleTouchEnd, {passive: false});
+    }
+
+    // --- PCマウス用 ---
     function handleDragStart(e) {
         dragSrcEl = this;
-        e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/html', this.innerHTML);
         this.classList.add('dragging');
     }
     function handleDragOver(e) {
-        if (e.preventDefault) e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
+        e.preventDefault();
         return false;
     }
-    function handleDragEnter() { this.classList.add('over'); }
-    function handleDragLeave() { this.classList.remove('over'); }
-    
     function handleDrop(e) {
-        if (e.stopPropagation) e.stopPropagation();
+        e.stopPropagation();
         if (dragSrcEl !== this) swapCells(dragSrcEl, this);
         return false;
     }
     function handleDragEnd() {
         this.classList.remove('dragging');
-        document.querySelectorAll('.cell').forEach(c => c.classList.remove('over'));
     }
 
-    // --- スマホ(タッチ)用ハンドラ ---
+    // --- スマホタッチ用 (ここが重要) ---
     function handleTouchStart(e) {
-        // 空の場合はドラッグさせない等の制御も可能ですが、移動のため許可します
+        const touch = e.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        isDraggingMode = false; // 初期化：まだドラッグとみなさない
         dragSrcEl = this;
-        this.classList.add('dragging');
     }
 
     function handleTouchMove(e) {
-        // 画面スクロールを防ぐ（これが無いとドラッグ操作時に画面が動いてしまう）
-        e.preventDefault(); 
-        
-        // 指の下にある要素を取得してハイライトする（視覚補助）
         const touch = e.touches[0];
-        const target = document.elementFromPoint(touch.clientX, touch.clientY);
-        
-        // 全セルのハイライト解除
-        document.querySelectorAll('.cell').forEach(c => c.classList.remove('over'));
+        const moveX = Math.abs(touch.clientX - touchStartX);
+        const moveY = Math.abs(touch.clientY - touchStartY);
 
+        // 指が10px以上動いたら「ドラッグモード」に移行
+        if (moveX > 10 || moveY > 10) {
+            isDraggingMode = true;
+        }
+
+        // ドラッグモードでないなら何もしない（スクロール等も自然に任せるか、干渉しない）
+        if (!isDraggingMode) {
+            return;
+        }
+
+        // ドラッグモードならスクロールを止めて入れ替え操作の見た目を作る
+        e.preventDefault();
+        this.classList.add('dragging');
+
+        // ハイライト処理
+        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+        document.querySelectorAll('.cell').forEach(c => c.classList.remove('over'));
+        
         if (target && target.closest('.cell')) {
-            const cell = target.closest('.cell');
-            if (cell !== dragSrcEl) {
-                cell.classList.add('over');
+            const targetCell = target.closest('.cell');
+            if (targetCell !== dragSrcEl) {
+                targetCell.classList.add('over');
             }
         }
     }
 
     function handleTouchEnd(e) {
-        e.preventDefault();
+        // クラス掃除
         this.classList.remove('dragging');
-        
-        // 全セルのハイライト解除
         document.querySelectorAll('.cell').forEach(c => c.classList.remove('over'));
 
-        // 指を離した場所の要素を取得
-        const touch = e.changedTouches[0];
-        const target = document.elementFromPoint(touch.clientX, touch.clientY);
-
-        if (target && target.closest('.cell')) {
-            const targetCell = target.closest('.cell');
-            if (dragSrcEl !== targetCell) {
-                swapCells(dragSrcEl, targetCell);
+        if (!isDraggingMode) {
+            // ★ 移動が少なかった = 「タップ」とみなす！
+            // clickイベントの重複発火を防ぐ
+            e.preventDefault();
+            processInput(this);
+        } else {
+            // ★ 移動が大きかった = 「ドラッグ＆ドロップ」とみなす！
+            const touch = e.changedTouches[0];
+            const target = document.elementFromPoint(touch.clientX, touch.clientY);
+            
+            if (target && target.closest('.cell')) {
+                const targetCell = target.closest('.cell');
+                if (dragSrcEl !== targetCell) {
+                    swapCells(dragSrcEl, targetCell);
+                }
             }
         }
     }
 
-    // 初回起動
+    // 初期起動
     selectMode(1);
 
 </script>
