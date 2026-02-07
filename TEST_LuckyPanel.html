@@ -359,13 +359,31 @@
         }
     }
 
+    /* =========================================
+       ▼▼▼ PC/タブレット (大画面) 用の上書き設定 ▼▼▼ 
+       ========================================= */
+    @media screen and (min-width: 1024px) and (orientation: landscape) {
+        :root {
+            /* PC用: 左右200px+隙間を考慮して安全に引く */
+            --ls-cell-w: calc((100vw - 650px) / 6);
+        }
+
+        .layout-container {
+            /* 左右200px、中央可変 */
+            grid-template-columns: 200px auto 200px;
+        }
+        
+        .mode-btn { width: 100%; font-size: 1.5rem; }
+        .action-btn { font-size: 1.5rem; }
+    }
+
 </style>
 </head>
 <body>
 
     <div class="layout-container">
         <div class="area-title">
-            <h1>ラッキーパネル補助ツール</h1>
+            <h1>ラッキーパネル補助ツール2</h1>
         </div>
         
         <div class="area-modes">
