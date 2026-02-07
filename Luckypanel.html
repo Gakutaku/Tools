@@ -12,10 +12,10 @@
     :root {
         /* スマホ横向き時のセルサイズ計算 
            高さ: (画面高さ - 上部要素計 約90px) ÷ 4行
-           幅  : (画面幅 - 左右スペース計 約300px) ÷ 6列
+           幅  : (画面幅 - 左右の要素と隙間計 約280px) ÷ 6列
         */
         --ls-cell-h: calc((100vh - 90px) / 4);
-        --ls-cell-w: calc((100vw - 300px) / 6);
+        --ls-cell-w: calc((100vw - 280px) / 6);
         /* 小さい方を採用して絶対にはみ出さないサイズにする */
         --ls-final-cell: min(var(--ls-cell-h), var(--ls-cell-w));
     }
@@ -225,8 +225,9 @@
         
         .layout-container {
             display: grid;
-            /* 左(auto) - 中央(固定幅) - 右(1fr) */
-            grid-template-columns: auto calc(var(--ls-final-cell) * 6 + 32px) 1fr;
+            /* 左(auto) - 中央(盤面) - 右(狭くする) */
+            /* column-gapで等間隔を空ける */
+            grid-template-columns: auto auto minmax(90px, 140px);
             grid-template-rows: auto auto 1fr;
             grid-template-areas:
                 "title title title"
@@ -237,7 +238,8 @@
             height: 100vh;
             max-width: none;
             padding: 5px 10px;
-            gap: 2px;
+            column-gap: 20px; /* 左右の隙間を統一 */
+            row-gap: 2px;
         }
 
         .area-title, .area-modes, .area-actions, .area-status, .area-grid {
@@ -259,9 +261,9 @@
             height: 100%; 
             display: flex;
             align-items: flex-start; 
-            justify-content: flex-end; /* ボタンを盤面側に寄せる */
-            padding-top: 6px; /* 盤面のパディング(6px)と高さを揃える */
-            padding-right: 8px; /* 盤面との隙間 */
+            justify-content: flex-end; 
+            /* 盤面のpadding-top(6px)と合わせることで開始位置を揃える */
+            padding-top: 6px; 
         }
         
         /* 右：アクション（上寄せ・左寄せ） */
@@ -273,7 +275,7 @@
             justify-content: flex-start; 
             padding-top: 6px; 
             padding-bottom: 6px; 
-            padding-left: 10px; 
+            /* padding-leftは column-gap に任せる */
         }
 
         /* 中央：グリッド（上寄せ・中央配置） */
@@ -313,6 +315,7 @@
             gap: 15px; 
             width: 100%;
             height: auto; 
+            max-width: none;
         }
 
         .action-btn { 
@@ -438,35 +441,38 @@
         supplyQueue.push('〆');
         updateStatus();
 
-        gridElement.style.gridTemplateColumns = `repeat(6, auto)`;
+        const isLandscape = window.matchMedia("(orientation: landscape)").matches;
         gridElement.innerHTML = '';
 
-        // 常に4行x6列
-        const totalRows = 4;
-        const totalCols = 6;
-
-        for (let r = 0; r < totalRows; r++) {
-            for (let c = 0; c < totalCols; c++) {
-                const isRowActive = r < config.rows;
-                const isColActive = c >= config.colOffset && c < (config.colOffset + config.cols);
-                const isActive = isRowActive && isColActive;
-                createCell(isActive);
+        if (isLandscape) {
+            // --- 横向き: 常に4x6のベースで描画 ---
+            gridElement.style.gridTemplateColumns = `repeat(6, auto)`;
+            const totalRows = 4;
+            const totalCols = 6;
+            for (let r = 0; r < totalRows; r++) {
+                for (let c = 0; c < totalCols; c++) {
+                    const isRowActive = r < config.rows;
+                    const isColActive = c >= config.colOffset && c < (config.colOffset + config.cols);
+                    // 横向き用createCell (true=アクティブ, false=フィラー)
+                    createCell(isRowActive && isColActive);
+                }
             }
-        }
-
-        if (window.matchMedia("(orientation: landscape)").matches) {
             updateActionGroupHeight();
         } else {
+            // --- 縦向き: 必要な数だけ描画 ---
+            gridElement.style.gridTemplateColumns = `repeat(${config.cols}, min-content)`;
+            const totalCells = config.rows * config.cols;
+            for (let i = 0; i < totalCells; i++) {
+                // 縦向き用createCell (常にアクティブとして作成)
+                createCell(true);
+            }
             actionGroup.style.height = '';
         }
     }
     
     window.addEventListener('resize', () => {
-        if (window.matchMedia("(orientation: landscape)").matches) {
-            updateActionGroupHeight();
-        } else {
-            actionGroup.style.height = '';
-        }
+        // 向きが変わった場合などに再描画が必要
+        initGame();
     });
 
     function updateActionGroupHeight() {
@@ -480,6 +486,7 @@
         }
     }
 
+    // 引数 isActive: trueなら通常セル、falseならフィラー(横向き用)
     function createCell(isActive) {
         const cell = document.createElement('div');
         cell.classList.add('cell'); 
