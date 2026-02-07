@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ラッキーパネル補助ツール2</title>
+<title>ラッキーパネル補助ツール</title>
 <link rel="icon" href="LuckyPanel_favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="LuckyPanel_favicon.png">
 
@@ -16,8 +16,8 @@
         /* 高さ: (画面高さ - 上部要素計 約90px) ÷ 4行 */
         --ls-cell-h: calc((100vh - 90px) / 4);
         
-        /* 幅: セーブ1時点の計算式 (隙間あり用 360px) */
-        --ls-cell-w: calc((100vw - 360px) / 6);
+        /* 幅: 画面幅からマージン280pxを引いて計算 */
+        --ls-cell-w: calc((100vw - 280px) / 6);
         
         /* 小さい方を採用 */
         --ls-final-cell: min(var(--ls-cell-h), var(--ls-cell-w));
@@ -25,8 +25,7 @@
 
     body {
         font-family: "Helvetica Neue", Arial, sans-serif;
-        /* セーブ1の背景色 (白/グレー系) */
-        background-color: #f8f9fa; 
+        background-color: #f8f9fa;
         color: #333;
         margin: 0;
         padding: 0;
@@ -39,7 +38,6 @@
         -webkit-tap-highlight-color: transparent;
         display: flex;
         justify-content: center;
-        overflow: hidden; 
     }
 
     h1 {
@@ -66,12 +64,6 @@
         padding: 10px;
         box-sizing: border-box;
         height: 100%;
-    }
-
-    /* =========================================
-       ▼▼▼ 縦向き（ポートレート）設定 ▼▼▼ 
-       ========================================= */
-    .layout-container {
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -114,7 +106,7 @@
     }
 
     .mode-btn.active {
-        background-color: #007bff; /* 標準の青 */
+        background-color: #007bff;
         color: white;
         border-color: #007bff;
         box-shadow: 0 2px 5px rgba(0,123,255,0.3);
@@ -132,8 +124,8 @@
         white-space: nowrap;
     }
 
-    #resetBtn { background-color: #6c757d; } /* 標準のグレー */
-    #nextBtn { background-color: #007bff; } /* 標準の青 */
+    #resetBtn { background-color: #6c757d; }
+    #nextBtn { background-color: #007bff; }
 
     .status-bar {
         font-weight: bold;
@@ -160,7 +152,6 @@
         height: fit-content; 
     }
 
-    /* セル設定 */
     .cell {
         width: 50px;
         height: 50px;
@@ -190,7 +181,6 @@
         border: 2px solid #e9ecef; 
     }
 
-    /* --- フィラー（塗りつぶし）セル --- */
     .cell.filler {
         background-color: #555; 
         border: 1px solid #666; 
@@ -199,7 +189,6 @@
         pointer-events: none;
     }
     
-    /* --- カラーパレット --- */
     .bg-A { background-color: #ff97a2; }
     .bg-B { background-color: #85abf1; }
     .bg-C { background-color: #f7cf86; }
@@ -227,8 +216,7 @@
         
         .layout-container {
             display: grid;
-            /* 左(auto) - 中央(auto) - 右(固定85px) */
-            grid-template-columns: auto auto 85px;
+            grid-template-columns: 85px 1fr 85px;
             grid-template-rows: auto auto 1fr;
             grid-template-areas:
                 "title title title"
@@ -238,103 +226,34 @@
             width: 100%;
             height: 100vh;
             max-width: none;
-            /* セーブ1の余白・隙間設定 */
-            padding: 5px 10px; 
+            padding: 10px;
             column-gap: 20px; 
             row-gap: 2px;
         }
 
-        .area-title, .area-modes, .area-actions, .area-status, .area-grid {
-            order: initial;
-            margin: 0;
-        }
-
-        .portrait-hint { display: none; }
-
         .area-title   { grid-area: title; }
         .area-status  { grid-area: status; }
-        
+        .area-modes   { grid-area: modes; display: flex; align-items: center; }
+        .area-actions { grid-area: actions; display: flex; align-items: center; }
+        .area-grid    { grid-area: grid; display: flex; justify-content: center; align-items: center; }
+
         h1 { font-size: 1rem; padding: 2px 0; }
         .status-bar { height: 1.2em; font-size: 0.9rem; margin-bottom: 2px; }
 
-        /* 左：モード選択 */
-        .area-modes { 
-            grid-area: modes; 
-            height: 100%; 
-            display: flex;
-            align-items: flex-start; 
-            justify-content: flex-end; 
-            padding-top: 6px; 
-        }
-        
-        /* 右：アクション */
-        .area-actions { 
-            grid-area: actions; 
-            height: 100%; 
-            display: flex;
-            align-items: flex-start; 
-            justify-content: flex-start; 
-            padding-top: 6px; 
-            padding-bottom: 6px; 
-        }
-
-        /* 中央：グリッド */
-        .area-grid { 
-            grid-area: grid; 
-            height: 100%; 
-            display: flex;
-            justify-content: center; 
-            align-items: flex-start; 
-            overflow: hidden; 
-        }
-
-        /* 左側ボタン */
         .mode-group {
             flex-direction: column;
-            gap: 4px; 
-            width: auto;
+            gap: 10px;
         }
-        .mode-btn { 
-            width: auto; 
-            text-align: center; 
-            padding: 0 12px; 
-            font-size: 1rem;
-            margin: 0;
-            box-sizing: border-box;
-            height: var(--ls-final-cell);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+        .mode-btn { width: 100%; text-align: center; padding: 8px 0; }
 
-        /* 右側ボタン */
         .action-group {
             flex-direction: column-reverse; 
-            justify-content: space-between; 
             gap: 15px; 
             width: 100%;
-            height: 100%; 
-            max-width: none;
         }
-
-        .action-btn { 
-            width: 100%; 
-            padding: 0; 
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-grow: 1; 
-            font-size: 1.1rem;
-        }
+        .action-btn { width: 100%; padding: 12px 0; }
         
-        /* 盤面 */
         .grid-board { 
-            margin: 0 auto; 
-            box-sizing: border-box;
-            /* 枠消滅対策: max-content */
-            width: max-content;
-            height: auto;
-            
             grid-template-columns: repeat(6, var(--ls-final-cell)) !important;
             grid-template-rows: repeat(4, var(--ls-final-cell)) !important;
         }
@@ -345,34 +264,13 @@
             font-size: calc(var(--ls-final-cell) * 0.5); 
         }
     }
-
-    /* =========================================
-       ▼▼▼ PC/タブレット (大画面) 用の上書き設定 ▼▼▼ 
-       ========================================= */
-    @media screen and (min-width: 1024px) and (orientation: landscape) {
-        :root {
-            /* PC用: 左右200px+隙間を考慮して安全に引く */
-            --ls-cell-w: calc((100vw - 650px) / 6);
-        }
-
-        .layout-container {
-            /* 左右200px、中央可変 */
-            grid-template-columns: 200px auto 200px;
-        }
-        
-        .mode-btn { width: 100%; font-size: 1.5rem; }
-        .action-btn { font-size: 1.5rem; }
-    }
-
 </style>
 </head>
 <body>
-
     <div class="layout-container">
         <div class="area-title">
-            <h1>ラッキーパネル補助ツール2</h1>
+            <h1>ラッキーパネル補助ツール</h1>
         </div>
-        
         <div class="area-modes">
             <div class="mode-group">
                 <button class="mode-btn" id="btnMode1" onclick="selectMode(1)">①甘口</button>
@@ -381,271 +279,53 @@
                 <button class="mode-btn" id="btnMode4" onclick="selectMode(4)">④激辛</button>
             </div>
         </div>
-
         <div class="area-actions">
             <div class="action-group" id="actionGroup">
                 <button class="action-btn" id="resetBtn" onclick="resetCurrentGame()">リセット</button>
                 <button class="action-btn" id="nextBtn" onclick="nextMode()">次へ</button>
             </div>
         </div>
-
         <div class="area-status">
             <div class="status-bar" id="statusBar">
                 次は:<span class="next-char" id="nextCharDisplay">-</span>
             </div>
         </div>
-
         <div class="area-grid">
             <div class="grid-board" id="grid"></div>
             <div class="portrait-hint">※横向き推奨</div>
         </div>
     </div>
-
-<script>
-    const modes = {
-        1: { rows: 3, cols: 4, colOffset: 1, chars: ['A', 'B', 'C', 'D', 'E'] },
-        2: { rows: 4, cols: 4, colOffset: 1, chars: ['A', 'B', 'C', 'D', 'E', 'F', 'G'] },
-        3: { rows: 4, cols: 5, colOffset: 1, chars: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'] },
-        4: { rows: 4, cols: 6, colOffset: 0, chars: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K'] }
-    };
-
-    const colorMap = {
-        'A': 'bg-A', 'B': 'bg-B', 'C': 'bg-C', 'D': 'bg-D', 'E': 'bg-E',
-        'F': 'bg-F', 'G': 'bg-G', 'H': 'bg-H', 'I': 'bg-I', 'J': 'bg-J', 'K': 'bg-K',
-        '★': 'bg-star', '〆': 'bg-close'
-    };
-
-    let currentModeId = 1; 
-    let supplyQueue = [];  
-    let dragSrcEl = null;
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let isDraggingMode = false;
-
-    const gridElement = document.getElementById('grid');
-    const nextCharDisplay = document.getElementById('nextCharDisplay');
-    const statusBar = document.getElementById('statusBar');
-    const actionGroup = document.getElementById('actionGroup');
-
-    function selectMode(id) {
-        currentModeId = id;
-        document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
-        document.getElementById(`btnMode${currentModeId}`).classList.add('active');
-        initGame();
-    }
-
-    function nextMode() {
-        let nextId = currentModeId + 1;
-        if (nextId > 4) nextId = 1;
-        selectMode(nextId);
-    }
-
-    function resetCurrentGame() {
-        initGame();
-    }
-
-    function initGame() {
-        const config = modes[currentModeId];
-        supplyQueue = [];
-        config.chars.forEach(char => { supplyQueue.push(char); supplyQueue.push(char); });
-        supplyQueue.push('★');
-        supplyQueue.push('〆');
-        updateStatus();
-
-        const isLandscape = window.matchMedia("(orientation: landscape)").matches;
-        gridElement.innerHTML = '';
-
-        if (isLandscape) {
-            gridElement.style.gridTemplateColumns = `repeat(6, auto)`;
-            gridElement.style.gridTemplateRows = `repeat(4, auto)`;
-            const totalRows = 4;
-            const totalCols = 6;
-
-            for (let r = 0; r < totalRows; r++) {
-                for (let c = 0; c < totalCols; c++) {
-                    const isRowActive = r < config.rows;
-                    const isColActive = c >= config.colOffset && c < (config.colOffset + config.cols);
-                    const isActive = isRowActive && isColActive;
-                    createCell(isActive);
-                }
-            }
-            updateActionGroupHeight();
-        } else {
-            gridElement.style.gridTemplateColumns = `repeat(${config.cols}, min-content)`;
-            gridElement.style.gridTemplateRows = `repeat(${config.rows}, min-content)`;
-            const totalCells = config.rows * config.cols;
-            for (let i = 0; i < totalCells; i++) {
-                createCell(true);
-            }
-            actionGroup.style.height = '';
-        }
-    }
-    
-    window.addEventListener('resize', () => {
-        initGame();
-    });
-
-    function updateActionGroupHeight() {
-        const sampleCell = document.querySelector('.cell');
-        if (sampleCell) {
-            const cellSize = sampleCell.getBoundingClientRect().height;
-            const gap = 4;
-            const padding = 12;
-            const totalHeight = (cellSize * 4) + (gap * 3) + padding;
-            actionGroup.style.height = `${totalHeight}px`;
-        }
-    }
-
-    function createCell(isActive) {
-        const cell = document.createElement('div');
-        cell.classList.add('cell'); 
-        
-        if (!isActive) {
-            cell.classList.add('filler');
-        } else {
-            cell.classList.add('empty');
-            addEvents(cell);
-        }
-        gridElement.appendChild(cell);
-    }
-
-    function updateStatus() {
-        if (supplyQueue.length > 0) {
-            nextCharDisplay.textContent = supplyQueue[0];
-            statusBar.style.visibility = 'visible';
-        } else {
-            nextCharDisplay.textContent = "完了";
-            statusBar.style.visibility = 'hidden';
-        }
-    }
-
-    function processInput(cell) {
-        if (!cell.classList.contains('empty') || supplyQueue.length === 0) return;
-
-        const item = supplyQueue.shift();
-        setItemToCell(cell, item);
-
-        if (item === '★' && supplyQueue.length === 1 && supplyQueue[0] === '〆') {
-            const emptyCells = document.querySelectorAll('.cell.empty');
-            if (emptyCells.length === 1) {
-                const lastItem = supplyQueue.shift();
-                setItemToCell(emptyCells[0], lastItem);
+    <script>
+        const modes={1:{rows:3,cols:4,colOffset:1,chars:['A','B','C','D','E']},2:{rows:4,cols:4,colOffset:1,chars:['A','B','C','D','E','F','G']},3:{rows:4,cols:5,colOffset:1,chars:['A','B','C','D','E','F','G','H','I']},4:{rows:4,cols:6,colOffset:0,chars:['A','B','C','D','E','F','G','H','I','J','K']}};
+        const colorMap={'A':'bg-A','B':'bg-B','C':'bg-C','D':'bg-D','E':'bg-E','F':'bg-F','G':'bg-G','H':'bg-H','I':'bg-I','J':'bg-J','K':'bg-K','★':'bg-star','〆':'bg-close'};
+        let currentModeId=1,supplyQueue=[],dragSrcEl=null;
+        const gridElement=document.getElementById('grid'),nextCharDisplay=document.getElementById('nextCharDisplay'),statusBar=document.getElementById('statusBar');
+        function selectMode(id){currentModeId=id;document.querySelectorAll('.mode-btn').forEach(btn=>btn.classList.remove('active'));document.getElementById(`btnMode${id}`).classList.add('active');initGame();}
+        function nextMode(){let n=currentModeId+1;if(n>4)n=1;selectMode(n);}
+        function resetCurrentGame(){initGame();}
+        function initGame(){
+            const c=modes[currentModeId];supplyQueue=[];
+            c.chars.forEach(ch=>{supplyQueue.push(ch);supplyQueue.push(ch);});
+            supplyQueue.push('★','〆');updateStatus();
+            gridElement.innerHTML='';
+            const isL=window.matchMedia("(orientation: landscape)").matches;
+            if(isL){
+                for(let r=0;r<4;r++)for(let l=0;l<6;l++)createCell(r<c.rows&&l>=c.colOffset&&l<c.colOffset+c.cols);
+            }else{
+                for(let i=0;i<c.rows*c.cols;i++)createCell(true);
             }
         }
-        updateStatus();
-    }
-
-    function setItemToCell(cell, item) {
-        cell.textContent = item;
-        cell.className = 'cell'; 
-        if (colorMap[item]) cell.classList.add(colorMap[item]);
-    }
-
-    function swapCells(src, target) {
-        const srcText = src.textContent;
-        const srcClass = src.className;
-        const targetText = target.textContent;
-        const targetClass = target.className;
-
-        const cleanClass = (cls) => cls.replace(' dragging', '').replace(' over', '');
-
-        src.textContent = targetText;
-        src.className = cleanClass(targetClass);
-
-        target.textContent = srcText;
-        target.className = cleanClass(srcClass);
-    }
-
-    function addEvents(cell) {
-        cell.addEventListener('click', (e) => {
-            if (e.detail === 0) return; 
-            processInput(cell);
-        });
-
-        cell.setAttribute('draggable', true);
-        cell.addEventListener('dragstart', handleDragStart);
-        cell.addEventListener('dragover', handleDragOver);
-        cell.addEventListener('drop', handleDrop);
-        cell.addEventListener('dragend', handleDragEnd);
-
-        cell.addEventListener('touchstart', handleTouchStart, {passive: false});
-        cell.addEventListener('touchmove', handleTouchMove, {passive: false});
-        cell.addEventListener('touchend', handleTouchEnd, {passive: false});
-    }
-
-    function handleDragStart(e) {
-        dragSrcEl = this;
-        e.dataTransfer.setData('text/html', this.innerHTML);
-        this.classList.add('dragging');
-    }
-    function handleDragOver(e) {
-        e.preventDefault();
-        return false;
-    }
-    function handleDrop(e) {
-        e.stopPropagation();
-        if (dragSrcEl !== this) swapCells(dragSrcEl, this);
-        return false;
-    }
-    function handleDragEnd() {
-        this.classList.remove('dragging');
-    }
-
-    function handleTouchStart(e) {
-        const touch = e.touches[0];
-        touchStartX = touch.clientX;
-        touchStartY = touch.clientY;
-        isDraggingMode = false;
-        dragSrcEl = this;
-    }
-
-    function handleTouchMove(e) {
-        const touch = e.touches[0];
-        const moveX = Math.abs(touch.clientX - touchStartX);
-        const moveY = Math.abs(touch.clientY - touchStartY);
-
-        if (moveX > 2 || moveY > 2) {
-            isDraggingMode = true;
+        function createCell(a){const e=document.createElement('div');e.classList.add('cell');if(!a)e.classList.add('filler');else{e.classList.add('empty');addEvents(e);}gridElement.appendChild(e);}
+        function updateStatus(){nextCharDisplay.textContent=supplyQueue.length?supplyQueue[0]:"完了";statusBar.style.visibility=supplyQueue.length?'visible':'hidden';}
+        function addEvents(e){
+            e.onclick=()=>{if(supplyQueue.length)setItemToCell(e,supplyQueue.shift()),updateStatus();};
+            e.draggable=true;
+            e.ondragstart=()=>dragSrcEl=e;
+            e.ondragover=v=>v.preventDefault();
+            e.ondrop=()=>{if(dragSrcEl!==e){const t=e.textContent,c=e.className;e.textContent=dragSrcEl.textContent;e.className=dragSrcEl.className;dragSrcEl.textContent=t;dragSrcEl.className=c;}};
         }
-
-        if (!isDraggingMode) return;
-
-        e.preventDefault();
-        this.classList.add('dragging');
-
-        const target = document.elementFromPoint(touch.clientX, touch.clientY);
-        document.querySelectorAll('.cell').forEach(c => c.classList.remove('over'));
-        
-        if (target && target.closest('.cell')) {
-            const targetCell = target.closest('.cell');
-            if (targetCell !== dragSrcEl && !targetCell.classList.contains('filler')) {
-                targetCell.classList.add('over');
-            }
-        }
-    }
-
-    function handleTouchEnd(e) {
-        this.classList.remove('dragging');
-        document.querySelectorAll('.cell').forEach(c => c.classList.remove('over'));
-
-        if (!isDraggingMode) {
-            e.preventDefault();
-            processInput(this);
-        } else {
-            const touch = e.changedTouches[0];
-            const target = document.elementFromPoint(touch.clientX, touch.clientY);
-            
-            if (target && target.closest('.cell')) {
-                const targetCell = target.closest('.cell');
-                if (dragSrcEl !== targetCell && !targetCell.classList.contains('filler')) {
-                    swapCells(dragSrcEl, targetCell);
-                }
-            }
-        }
-    }
-
-    selectMode(1);
-</script>
-
+        function setItemToCell(e,i){e.textContent=i;e.className='cell '+(colorMap[i]||'');}
+        selectMode(1);
+    </script>
 </body>
 </html>
