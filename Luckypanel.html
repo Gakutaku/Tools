@@ -10,10 +10,7 @@
 <style>
     /* --- 基本変数 --- */
     :root {
-        /* スマホ横向き時のセルサイズ計算 
-           高さ: (画面高さ - 上部要素計 約90px) ÷ 4行
-           幅  : (画面幅 - 左右サイドバー計 240px) ÷ 6列
-        */
+        /* スマホ横向き時のセルサイズ計算 */
         --ls-cell-h: calc((100vh - 90px) / 4);
         --ls-cell-w: calc((100vw - 240px) / 6);
         --ls-final-cell: min(var(--ls-cell-h), var(--ls-cell-w));
@@ -39,11 +36,20 @@
 
     h1 {
         margin: 0;
-        padding: 5px 0;
+        padding: 5px 0 0 0;
         font-size: 1.2rem;
         color: #444;
         text-align: center;
         line-height: 1.2;
+    }
+
+    /* ▼▼▼ 追加：横向き推奨メッセージ ▼▼▼ */
+    .portrait-hint {
+        font-size: 0.7rem;
+        color: #ffccd5; /* 気付くか気付かないかの薄いピンク */
+        text-align: center;
+        margin-bottom: 5px;
+        font-weight: normal;
     }
 
     /* --- レイアウトコンテナ (共通) --- */
@@ -65,7 +71,7 @@
     }
 
     /* 表示順序 */
-    .area-title   { order: 1; width: 100%; display: flex; justify-content: center; flex-shrink: 0; }
+    .area-title   { order: 1; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; }
     .area-modes   { order: 2; width: 100%; display: flex; justify-content: center; margin-bottom: 8px; flex-shrink: 0; }
     .area-actions { order: 3; width: 100%; display: flex; justify-content: center; margin-bottom: 10px; flex-shrink: 0; }
     .area-status  { order: 4; width: 100%; display: flex; justify-content: center; margin-bottom: 5px; flex-shrink: 0; }
@@ -83,6 +89,8 @@
         display: flex;
         gap: 15px;
         justify-content: center;
+        width: 100%;
+        max-width: 400px;
     }
 
     .mode-btn {
@@ -106,14 +114,14 @@
     }
 
     .action-btn {
-        padding: 8px 30px;
+        padding: 10px 0;
         font-size: 1rem;
         border: none;
         border-radius: 4px;
         cursor: pointer;
         color: white;
         transition: background-color 0.2s;
-        min-width: 100px;
+        flex: 1;
         white-space: nowrap;
     }
 
@@ -138,10 +146,11 @@
         display: grid;
         gap: 4px;
         background-color: #555;
-        padding: 6px; /* 盤面のパディング */
+        padding: 6px;
         border-radius: 8px;
         box-shadow: 0 6px 12px rgba(0,0,0,0.15);
         touch-action: none;
+        height: fit-content; 
     }
 
     /* セル設定 (縦画面) */
@@ -226,6 +235,10 @@
         .area-status  { grid-area: status; }
         
         h1 { font-size: 1rem; padding: 2px 0; }
+        
+        /* ▼▼▼ 横向き時はヒントを消す ▼▼▼ */
+        .portrait-hint { display: none; }
+
         .status-bar { height: 1.2em; font-size: 0.9rem; margin-bottom: 2px; }
 
         /* 左：モード選択（上寄せ） */
@@ -233,19 +246,20 @@
             grid-area: modes; 
             height: 100%; 
             display: flex;
-            align-items: flex-start; /* 上寄せ */
+            align-items: flex-start; 
             justify-content: flex-start;
-            padding-top: 6px; /* 盤面のパディングと合わせる */
+            padding-top: 6px; 
         }
         
-        /* 右：アクション（上寄せ） */
+        /* 右：アクション（上寄せ・縦幅いっぱい） */
         .area-actions { 
             grid-area: actions; 
             height: 100%; 
             display: flex;
-            align-items: flex-start; /* 縦方向上寄せ */
-            justify-content: center; /* 横方向は中央 */
-            padding-top: 6px; /* ★盤面のパディングと合わせる★ */
+            justify-content: center;
+            padding-top: 6px; 
+            padding-bottom: 6px;
+            align-items: stretch;
         }
 
         /* 中央：グリッド（上寄せ・中央配置） */
@@ -266,15 +280,24 @@
         }
         .mode-btn { width: 100%; text-align: center; padding: 6px 10px; }
 
+        /* --- 横向き時のアクションボタン設定 --- */
         .action-group {
-            flex-direction: column;
+            flex-direction: column-reverse; /* 下がリセット、上が次へ */
             gap: 30px; 
             width: 100%;
+            height: 100%; 
+            box-sizing: border-box;
+            max-width: none;
         }
-        /* ボタンサイズ（縦に大きく） */
+
         .action-btn { 
             width: 100%; 
-            padding: 22px 10px; 
+            padding: 0; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-grow: 1; 
+            max-height: 50%;
         }
         
         /* 盤面 */
@@ -296,6 +319,7 @@
         
         <div class="area-title">
             <h1>ラッキーパネル補助ツール</h1>
+            <div class="portrait-hint">※横向き推奨</div>
         </div>
         
         <div class="area-modes">
@@ -309,8 +333,8 @@
 
         <div class="area-actions">
             <div class="action-group">
-                <button class="action-btn" id="nextBtn" onclick="nextMode()">次へ</button>
                 <button class="action-btn" id="resetBtn" onclick="resetCurrentGame()">リセット</button>
+                <button class="action-btn" id="nextBtn" onclick="nextMode()">次へ</button>
             </div>
         </div>
 
