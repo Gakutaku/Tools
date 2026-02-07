@@ -11,10 +11,10 @@
     /* --- 基本変数 --- */
     :root {
         /* スマホ横向き時のセルサイズ計算 */
-        /* 幅計算: 画面幅 - (左メニュー推定120px + 右ボタン85px + 隙間や余白計60px) */
-        /* 右ボタンを狭くした分、マス目を大きく確保できるように調整 */
+        /* 幅計算: 画面幅 - (左メニュー推定 + 右ボタン85px + 隙間や余白) */
+        /* 安全マージンを多めにとって計算 */
         --ls-cell-h: calc((100vh - 90px) / 4);
-        --ls-cell-w: calc((100vw - 265px) / 6);
+        --ls-cell-w: calc((100vw - 280px) / 6);
         /* 小さい方を採用 */
         --ls-final-cell: min(var(--ls-cell-h), var(--ls-cell-w));
     }
@@ -224,9 +224,9 @@
         
         .layout-container {
             display: grid;
-            /* 左(auto) - 中央(固定幅) - 右(固定幅85px) */
+            /* 左(auto) - 中央(auto:中身に合わせる) - 右(固定幅85px) */
             /* gap: 20px 確保 */
-            grid-template-columns: auto calc(var(--ls-final-cell) * 6 + 32px) 85px;
+            grid-template-columns: auto auto 85px;
             grid-template-rows: auto auto 1fr;
             grid-template-areas:
                 "title title title"
@@ -237,7 +237,7 @@
             height: 100vh;
             max-width: none;
             padding: 5px 10px;
-            column-gap: 20px; /* 左右の隙間を20pxで統一 */
+            column-gap: 20px; 
             row-gap: 2px;
         }
 
@@ -296,11 +296,11 @@
         .mode-btn { 
             width: auto; 
             text-align: center; 
-            padding: 0 12px; /* 横幅は文字列分 */
+            padding: 0 12px; 
             font-size: 1rem;
             margin: 0;
             box-sizing: border-box;
-            /* ★高さと配置合わせの肝★ */
+            /* 高さ合わせ */
             height: var(--ls-final-cell);
             display: flex;
             align-items: center;
@@ -329,10 +329,12 @@
         
         /* 盤面: 4行x6列で固定 */
         .grid-board { 
-            margin: 0; 
+            margin: 0 auto; /* 中央配置 */
             box-sizing: border-box;
-            height: calc(var(--ls-final-cell) * 4 + 12px + 12px);
-            width: calc(var(--ls-final-cell) * 6 + 12px + 12px);
+            /* 幅と高さは中身（セル）に合わせて自動で決まるようにする */
+            width: auto;
+            height: auto;
+            /* 明示的に4x6を指定 */
             grid-template-columns: repeat(6, var(--ls-final-cell)) !important;
             grid-template-rows: repeat(4, var(--ls-final-cell)) !important;
         }
@@ -384,8 +386,6 @@
 
 <script>
     // モード定義
-    // colOffset: 開始列（0始まり）
-    // cols: 有効な列数
     // ① 3x4 -> 左右1列塗りつぶし (有効列: 1,2,3,4)
     // ② 4x4 -> 左右1列塗りつぶし (有効列: 1,2,3,4)
     // ③ 4x5 -> 左1列塗りつぶし (有効列: 1,2,3,4,5)
@@ -445,7 +445,7 @@
 
         if (isLandscape) {
             // --- 横向き: 常に4x6のベースで描画 ---
-            gridElement.style.gridTemplateColumns = `repeat(6, auto)`;
+            // grid-template-columns/rows はCSSで定義済み
             const totalRows = 4;
             const totalCols = 6;
 
@@ -464,6 +464,7 @@
         } else {
             // --- 縦向き: 必要な数だけ描画 (フィラーなし) ---
             gridElement.style.gridTemplateColumns = `repeat(${config.cols}, min-content)`;
+            gridElement.style.gridTemplateRows = `repeat(${config.rows}, min-content)`; // 行数も指定
             const totalCells = config.rows * config.cols;
             for (let i = 0; i < totalCells; i++) {
                 createCell(true);
