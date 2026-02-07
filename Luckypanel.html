@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>ラッキーパネル補助ツール</title>
+
 <link rel="icon" href="LuckyPanel_favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="LuckyPanel_favicon.png">
 <style>
@@ -18,7 +19,7 @@
         -webkit-user-select: none;
         user-select: none;
         -webkit-touch-callout: none;
-        overscroll-behavior: none; /* バウンススクロール防止 */
+        overscroll-behavior: none;
     }
 
     h1 {
@@ -27,7 +28,6 @@
         color: #444;
     }
 
-    /* コントロールエリア */
     .controls {
         margin-bottom: 15px;
         display: flex;
@@ -38,8 +38,8 @@
         padding: 15px 25px;
         border-radius: 8px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        width: 90%;
-        max-width: 500px;
+        width: 95%; /* 横幅を少し広げました */
+        max-width: 600px;
     }
 
     .mode-group {
@@ -99,25 +99,25 @@
         margin-left: 5px;
     }
 
-    /* グリッド */
     .grid-container {
         display: grid;
-        gap: 6px;
+        gap: 5px; /* マスが増えるため隙間を少し狭く */
         background-color: #555;
         padding: 8px;
         border-radius: 8px;
         box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-        touch-action: none; /* ブラウザ標準のスクロール操作などを無効化 */
+        touch-action: none;
     }
 
     .cell {
-        width: 60px;
-        height: 60px;
+        /* マスサイズを少し調整（激辛モードで画面からはみ出ないように） */
+        width: 55px; 
+        height: 55px;
         background-color: #fff;
         display: flex;
         justify-content: center;
         align-items: center;
-        font-size: 1.6rem;
+        font-size: 1.5rem;
         font-weight: bold;
         cursor: pointer;
         border-radius: 4px;
@@ -127,11 +127,21 @@
         position: relative;
     }
 
+    /* 画面幅が狭いスマホ用の調整 */
+    @media (max-width: 400px) {
+        .cell {
+            width: 45px;
+            height: 45px;
+            font-size: 1.2rem;
+        }
+    }
+
     .cell.empty {
         background-color: #e9ecef;
         color: transparent;
     }
     
+    /* カラーパレット */
     .bg-A { background-color: #ff97a2; }
     .bg-B { background-color: #85abf1; }
     .bg-C { background-color: #f7cf86; }
@@ -141,13 +151,15 @@
     .bg-G { background-color: #a3d07d; }
     .bg-H { background-color: #ffc0cb; }
     .bg-I { background-color: #b3e5fc; }
+    /* 新規追加カラー */
+    .bg-J { background-color: #d1c4e9; } /* 薄紫 */
+    .bg-K { background-color: #b2dfdb; } /* 薄ティール */
 
     .bg-star { background-color: #fff176; color: #f57f17; border: 2px solid #fbc02d; }
     .bg-close { background-color: #e1bee7; color: #8e44ad; font-weight: 900; }
 
     .cell:not(.empty) { cursor: grab; border: 1px solid rgba(0,0,0,0.05); }
     
-    /* ドラッグ中の見た目 */
     .cell.dragging {
         opacity: 0.6;
         transform: scale(1.1);
@@ -168,9 +180,10 @@
     
     <div class="controls">
         <div class="mode-group">
-            <button class="mode-btn" id="btnMode1" onclick="selectMode(1)">① 3×4 (A-E)</button>
-            <button class="mode-btn" id="btnMode2" onclick="selectMode(2)">② 4×4 (A-G)</button>
-            <button class="mode-btn" id="btnMode3" onclick="selectMode(3)">③ 4×5 (A-I)</button>
+            <button class="mode-btn" id="btnMode1" onclick="selectMode(1)">①甘口</button>
+            <button class="mode-btn" id="btnMode2" onclick="selectMode(2)">②中辛</button>
+            <button class="mode-btn" id="btnMode3" onclick="selectMode(3)">③辛口</button>
+            <button class="mode-btn" id="btnMode4" onclick="selectMode(4)">④激辛</button>
         </div>
         <div class="action-group">
             <button class="action-btn" id="resetBtn" onclick="resetCurrentGame()">リセット</button>
@@ -185,23 +198,24 @@
     <div class="grid-container" id="grid"></div>
 
 <script>
+    // モード定義
     const modes = {
         1: { rows: 3, cols: 4, chars: ['A', 'B', 'C', 'D', 'E'] },
         2: { rows: 4, cols: 4, chars: ['A', 'B', 'C', 'D', 'E', 'F', 'G'] },
-        3: { rows: 4, cols: 5, chars: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'] }
+        3: { rows: 4, cols: 5, chars: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'] },
+        4: { rows: 4, cols: 6, chars: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K'] }
     };
 
+    // カラーマップ
     const colorMap = {
         'A': 'bg-A', 'B': 'bg-B', 'C': 'bg-C', 'D': 'bg-D', 'E': 'bg-E',
-        'F': 'bg-F', 'G': 'bg-G', 'H': 'bg-H', 'I': 'bg-I',
+        'F': 'bg-F', 'G': 'bg-G', 'H': 'bg-H', 'I': 'bg-I', 'J': 'bg-J', 'K': 'bg-K',
         '★': 'bg-star', '〆': 'bg-close'
     };
 
     let currentModeId = 1; 
     let supplyQueue = [];  
     let dragSrcEl = null;
-
-    // タッチ操作判定用の変数
     let touchStartX = 0;
     let touchStartY = 0;
     let isDraggingMode = false;
@@ -210,8 +224,7 @@
     const nextCharDisplay = document.getElementById('nextCharDisplay');
     const statusBar = document.getElementById('statusBar');
 
-    // --- ロジック ---
-
+    // モード選択
     function selectMode(id) {
         currentModeId = id;
         document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
@@ -219,9 +232,10 @@
         initGame();
     }
 
+    // 次へボタン (ローテーション 1->2->3->4->1)
     function nextMode() {
         let nextId = currentModeId + 1;
-        if (nextId > 3) nextId = 1;
+        if (nextId > 4) nextId = 1;
         selectMode(nextId);
     }
 
@@ -229,6 +243,7 @@
         initGame();
     }
 
+    // ゲーム初期化
     function initGame() {
         const config = modes[currentModeId];
         supplyQueue = [];
@@ -237,8 +252,18 @@
         supplyQueue.push('〆');
         updateStatus();
 
-        gridElement.style.gridTemplateColumns = `repeat(${config.cols}, 60px)`;
-        gridElement.style.gridTemplateRows = `repeat(${config.rows}, 60px)`;
+        gridElement.style.gridTemplateColumns = `repeat(${config.cols}, auto)`;
+        // グリッド幅はCSSでセルサイズ固定にしているが、スマホで4x6は狭いのでauto推奨
+        // ただし見た目の統一感のため、ここではCSSのwidthを優先しつつ列数指定のみ行う
+        
+        // CSS変数で列数を渡してレスポンシブ対応も可能だが、
+        // 簡易的にJSで列定義を書き換える
+        // width: auto だと崩れるため、少し調整
+        
+        // スマホで激辛(幅6)を表示するため、Grid定義をシンプルに
+        // 列の幅は .cell の幅に依存させる
+        gridElement.style.gridTemplateColumns = `repeat(${config.cols}, min-content)`;
+        
         gridElement.innerHTML = '';
 
         const totalCells = config.rows * config.cols;
@@ -264,14 +289,12 @@
         }
     }
 
-    // ■ 入力処理（共通）
     function processInput(cell) {
         if (!cell.classList.contains('empty') || supplyQueue.length === 0) return;
 
         const item = supplyQueue.shift();
         setItemToCell(cell, item);
 
-        // ★が出た時の自動入力
         if (item === '★' && supplyQueue.length === 1 && supplyQueue[0] === '〆') {
             const emptyCells = document.querySelectorAll('.cell.empty');
             if (emptyCells.length === 1) {
@@ -288,7 +311,6 @@
         if (colorMap[item]) cell.classList.add(colorMap[item]);
     }
 
-    // ■ 入れ替え処理（共通）
     function swapCells(src, target) {
         const srcText = src.textContent;
         const srcClass = src.className;
@@ -304,29 +326,23 @@
         target.className = cleanClass(srcClass);
     }
 
-    // --- イベントリスナー ---
     function addEvents(cell) {
-        // PC用クリック
         cell.addEventListener('click', (e) => {
-            // タッチ操作時はclickイベントを無視する（二重発火防止）
-            if (e.detail === 0) return; // detailが0の場合はプログラム的なクリック等の可能性
+            if (e.detail === 0) return; 
             processInput(cell);
         });
 
-        // PC用ドラッグ
         cell.setAttribute('draggable', true);
         cell.addEventListener('dragstart', handleDragStart);
         cell.addEventListener('dragover', handleDragOver);
         cell.addEventListener('drop', handleDrop);
         cell.addEventListener('dragend', handleDragEnd);
 
-        // スマホ用タッチ
         cell.addEventListener('touchstart', handleTouchStart, {passive: false});
         cell.addEventListener('touchmove', handleTouchMove, {passive: false});
         cell.addEventListener('touchend', handleTouchEnd, {passive: false});
     }
 
-    // --- PCマウス用 ---
     function handleDragStart(e) {
         dragSrcEl = this;
         e.dataTransfer.setData('text/html', this.innerHTML);
@@ -345,12 +361,11 @@
         this.classList.remove('dragging');
     }
 
-    // --- スマホタッチ用 (ここが重要) ---
     function handleTouchStart(e) {
         const touch = e.touches[0];
         touchStartX = touch.clientX;
         touchStartY = touch.clientY;
-        isDraggingMode = false; // 初期化：まだドラッグとみなさない
+        isDraggingMode = false;
         dragSrcEl = this;
     }
 
@@ -359,21 +374,15 @@
         const moveX = Math.abs(touch.clientX - touchStartX);
         const moveY = Math.abs(touch.clientY - touchStartY);
 
-        // 指が10px以上動いたら「ドラッグモード」に移行
         if (moveX > 10 || moveY > 10) {
             isDraggingMode = true;
         }
 
-        // ドラッグモードでないなら何もしない（スクロール等も自然に任せるか、干渉しない）
-        if (!isDraggingMode) {
-            return;
-        }
+        if (!isDraggingMode) return;
 
-        // ドラッグモードならスクロールを止めて入れ替え操作の見た目を作る
         e.preventDefault();
         this.classList.add('dragging');
 
-        // ハイライト処理
         const target = document.elementFromPoint(touch.clientX, touch.clientY);
         document.querySelectorAll('.cell').forEach(c => c.classList.remove('over'));
         
@@ -386,17 +395,13 @@
     }
 
     function handleTouchEnd(e) {
-        // クラス掃除
         this.classList.remove('dragging');
         document.querySelectorAll('.cell').forEach(c => c.classList.remove('over'));
 
         if (!isDraggingMode) {
-            // ★ 移動が少なかった = 「タップ」とみなす！
-            // clickイベントの重複発火を防ぐ
             e.preventDefault();
             processInput(this);
         } else {
-            // ★ 移動が大きかった = 「ドラッグ＆ドロップ」とみなす！
             const touch = e.changedTouches[0];
             const target = document.elementFromPoint(touch.clientX, touch.clientY);
             
@@ -409,12 +414,8 @@
         }
     }
 
-    // 初期起動
     selectMode(1);
-
 </script>
 
 </body>
 </html>
-
-
