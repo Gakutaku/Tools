@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ラッキーパネル補助ツール1</title>
+<title>ラッキーパネル補助ツール</title>
 <link rel="icon" href="LuckyPanel_favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="LuckyPanel_favicon.png">
 
@@ -25,20 +25,7 @@
 
     body {
         font-family: "Helvetica Neue", Arial, sans-serif;
-        background-color: #e8dcb9;
-        background-image: 
-            repeating-linear-gradient(90deg, 
-                rgba(160, 120, 60, 0.05) 0px, 
-                rgba(160, 120, 60, 0.05) 1px, 
-                transparent 1px, 
-                transparent 20px
-            ),
-            repeating-linear-gradient(90deg, 
-                rgba(160, 120, 60, 0.03) 0px, 
-                rgba(160, 120, 60, 0.03) 3px, 
-                transparent 3px, 
-                transparent 50px
-            );
+        background-color: #f8f9fa; 
         color: #333;
         margin: 0;
         padding: 0;
@@ -65,7 +52,7 @@
 
     .portrait-hint {
         font-size: 0.8rem;
-        color: #c0392b;
+        color: #ffe0e6;
         text-align: center;
         margin-top: 8px;
         font-weight: bold;
@@ -112,7 +99,7 @@
         border: 2px solid #ddd;
         border-radius: 20px;
         cursor: pointer;
-        background-color: #ac938a;
+        background-color: #fff;
         color: #555;
         transition: all 0.2s;
         font-weight: bold;
@@ -120,9 +107,9 @@
     }
 
     .mode-btn.active {
-        background-color: #57bd5c;
+        background-color: #007bff; /* 標準の青 */
         color: white;
-        border-color: #388e3c;
+        border-color: #007bff;
         box-shadow: 0 2px 5px rgba(0,123,255,0.3);
     }
 
@@ -138,8 +125,8 @@
         white-space: nowrap;
     }
 
-    #resetBtn { background-color: #adbb9f; } 
-    #nextBtn { background-color: #009772; } 
+    #resetBtn { background-color: #6c757d; } /* 標準のグレー */
+    #nextBtn { background-color: #007bff; } /* 標準の青 */
 
     .status-bar {
         font-weight: bold;
@@ -376,7 +363,7 @@
 
     <div class="layout-container">
         <div class="area-title">
-            <h1>ラッキーパネル補助ツール1</h1>
+            <h1>ラッキーパネル補助ツール</h1>
         </div>
         
         <div class="area-modes">
