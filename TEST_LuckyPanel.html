@@ -3,22 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ラッキーパネル補助ツール5</title>
+<title>ラッキーパネル補助ツール6</title>
 
 <link rel="icon" href="LuckyPanel_favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="LuckyPanel_favicon.png">
+
 <style>
     /* =========================================
-       ▼▼▼ 基本変数 (スマホ・横向き基準) ▼▼▼ 
+       ▼▼▼ 基本設定 (スマホ・横向き基準) ▼▼▼ 
        =========================================
     */
     :root {
         /* 高さ: (画面高さ - 上部要素計 約90px) ÷ 4行 */
         --ls-cell-h: calc((100vh - 90px) / 4);
         
-        /* 幅: (画面幅 - 左右の要素と隙間計 380px) ÷ 6列 */
-        /* ※ここを十分小さくすることで画面からはみ出しにくくします */
-        --ls-cell-w: calc((100vw - 380px) / 6);
+        /* ★修正★ 幅計算の安全マージンを大幅に拡大 (380px -> 420px)
+           これによりセルが少し小さくなり、右端が見切れるのを防ぎます */
+        --ls-cell-w: calc((100vw - 420px) / 6);
         
         /* 小さい方を採用して正方形を作る */
         --ls-final-cell: min(var(--ls-cell-h), var(--ls-cell-w));
@@ -258,7 +259,7 @@
             display: flex;
             align-items: flex-start; 
             justify-content: flex-end; 
-            /* ★修正★ 盤面のpadding(6px)と合わせる */
+            /* 盤面のpadding(6px)と合わせる */
             padding-top: 6px; 
         }
         
@@ -269,7 +270,7 @@
             display: flex;
             align-items: flex-start; 
             justify-content: flex-start; 
-            /* ★修正★ 盤面のpadding(6px)と合わせる */
+            /* 盤面のpadding(6px)と合わせる */
             padding-top: 6px; 
             padding-bottom: 6px; 
         }
@@ -324,19 +325,19 @@
             font-size: 1.1rem;
         }
         
-        /* 盤面 */
+        /* 盤面: 4行x6列で固定 */
         .grid-board { 
             margin: 0 auto; 
             box-sizing: border-box;
             
-            /* ★重要修正★ 
-               widthを計算式で指定するのをやめ、
-               max-contentにすることで中身(セル+隙間+パディング)に
-               合わせて自動的に必要な幅を確保させます。
-               これで絶対に右端が消えません。
+            /* ★最重要修正★ 
+               widthを計算式(calc)ではなく max-content に設定。
+               これにより「セル6個 + 隙間 + パディング」の幅が
+               どんな計算誤差があっても強制的に確保され、
+               枠が見切れることが物理的に不可能になります。
             */
             width: max-content;
-            height: auto; /* 高さは中身なりでOK */
+            height: auto;
             
             grid-template-columns: repeat(6, var(--ls-final-cell)) !important;
             grid-template-rows: repeat(4, var(--ls-final-cell)) !important;
@@ -354,8 +355,11 @@
        ========================================= */
     @media screen and (min-width: 1024px) and (orientation: landscape) {
         :root {
-            /* PC用: 左右のパネルが広い分、セルを小さくする */
-            --ls-cell-w: calc((100vw - 600px) / 6);
+            /* ★PC用セルサイズ計算★
+               左右200px + 余白を考慮し、余裕を持って「700px」引きます。
+               これにより中央の盤面が縮小され、絶対に侵食しません。
+            */
+            --ls-cell-w: calc((100vw - 700px) / 6);
         }
 
         .layout-container {
@@ -379,7 +383,7 @@
 
     <div class="layout-container">
         <div class="area-title">
-            <h1>ラッキーパネル補助ツール5</h1>
+            <h1>ラッキーパネル補助ツール6</h1>
         </div>
         
         <div class="area-modes">
@@ -411,7 +415,6 @@
     </div>
 
 <script>
-    // モード定義
     const modes = {
         1: { rows: 3, cols: 4, colOffset: 1, chars: ['A', 'B', 'C', 'D', 'E'] },
         2: { rows: 4, cols: 4, colOffset: 1, chars: ['A', 'B', 'C', 'D', 'E', 'F', 'G'] },
