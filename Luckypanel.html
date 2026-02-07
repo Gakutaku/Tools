@@ -9,6 +9,16 @@
 <link rel="apple-touch-icon" href="LuckyPanel_favicon.png">
 <style>
     /* --- 基本設定 --- */
+    :root {
+        /* スマホ横向き時の計算用変数 */
+        /* ヘッダー類(約70px)と余白を除いた高さを4行で割る */
+        --ls-cell-h: calc((100vh - 80px) / 4);
+        /* 左右のボタンエリア(約220px)と余白を除いた幅を6列で割る */
+        --ls-cell-w: calc((100vw - 240px) / 6);
+        /* 上記の小さい方を採用してセルサイズとする */
+        --ls-final-cell: min(var(--ls-cell-h), var(--ls-cell-w));
+    }
+
     body {
         font-family: "Helvetica Neue", Arial, sans-serif;
         background-color: #f8f9fa;
@@ -16,7 +26,7 @@
         margin: 0;
         padding: 0;
         width: 100vw;
-        height: 100vh; /* 画面いっぱいに使う */
+        height: 100vh;
         -webkit-user-select: none;
         user-select: none;
         -webkit-touch-callout: none;
@@ -24,17 +34,18 @@
         -webkit-tap-highlight-color: transparent;
         display: flex;
         justify-content: center;
+        overflow: hidden; /* スクロール防止 */
     }
 
     h1 {
         margin: 0;
-        padding: 10px 0;
-        font-size: 1.4rem;
+        padding: 5px 0;
+        font-size: 1.2rem;
         color: #444;
         text-align: center;
     }
 
-    /* --- レイアウトコンテナ (CSS Grid) --- */
+    /* --- レイアウトコンテナ (縦画面用デフォルト) --- */
     .layout-container {
         display: flex;
         flex-direction: column;
@@ -43,14 +54,15 @@
         max-width: 600px;
         padding: 10px;
         box-sizing: border-box;
+        height: 100%;
     }
 
     /* 各エリアのスタイル */
-    .area-title { width: 100%; display: flex; justify-content: center; }
-    .area-modes { width: 100%; display: flex; justify-content: center; margin-bottom: 10px; }
-    .area-actions { width: 100%; display: flex; justify-content: center; margin-bottom: 10px; }
-    .area-status { width: 100%; display: flex; justify-content: center; margin-bottom: 5px; }
-    .area-grid { width: 100%; display: flex; justify-content: center; align-items: flex-start; }
+    .area-title   { width: 100%; display: flex; justify-content: center; flex-shrink: 0; }
+    .area-status  { width: 100%; display: flex; justify-content: center; margin-bottom: 5px; flex-shrink: 0; }
+    .area-modes   { width: 100%; display: flex; justify-content: center; margin-bottom: 10px; flex-shrink: 0; }
+    .area-actions { width: 100%; display: flex; justify-content: center; margin-bottom: 10px; flex-shrink: 0; }
+    .area-grid    { width: 100%; display: flex; justify-content: center; align-items: flex-start; flex-grow: 1; overflow-y: auto; }
 
     /* --- ボタン類のスタイル --- */
     .mode-group {
@@ -76,7 +88,7 @@
         color: #555;
         transition: all 0.2s;
         font-weight: bold;
-        white-space: nowrap; /* 折り返し防止 */
+        white-space: nowrap;
     }
 
     .mode-btn.active {
@@ -105,6 +117,8 @@
         font-weight: bold;
         height: 1.5em;
         color: #555;
+        display: flex;
+        align-items: center;
     }
     .next-char {
         color: #d35400;
@@ -115,14 +129,15 @@
     /* --- グリッド盤面 --- */
     .grid-board {
         display: grid;
-        gap: 5px;
+        gap: 4px;
         background-color: #555;
-        padding: 8px;
+        padding: 6px;
         border-radius: 8px;
         box-shadow: 0 6px 12px rgba(0,0,0,0.15);
         touch-action: none;
     }
 
+    /* セル設定 (縦画面デフォルト) */
     .cell {
         width: 55px; 
         height: 55px;
@@ -173,43 +188,71 @@
     .bg-close { background-color: #e1bee7; color: #8e44ad; font-weight: 900; border: 2px solid #ce93d8; }
     .cell:not(.empty):not(.bg-star):not(.bg-close) { border: 2px solid rgba(0,0,0,0.1); }
     
-    /* ドラッグ中 */
     .cell.dragging { opacity: 0.6; transform: scale(1.1); z-index: 999; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
     .cell.over { border: 2px dashed #007bff !important; opacity: 0.8; transform: scale(0.95); }
 
 
     /* =========================================
-       ▼▼▼ 横向き（ランドスケープ）対応設定 ▼▼▼ 
+       ▼▼▼ 横向き（ランドスケープ）設定 ▼▼▼ 
        ========================================= */
     @media (orientation: landscape) {
         
         .layout-container {
-            /* 全体レイアウトを3列のグリッドに変更 */
+            /* 全体を「ヘッダー」と「コンテンツ」に分ける */
             display: grid;
-            grid-template-columns: 100px 1fr 100px; /* 左ボタン列、中央盤面、右ボタン列 */
-            grid-template-rows: auto auto 1fr; /* タイトル、ステータス、盤面 */
+            /* 左ボタン(110px) - メイン(自動) - 右ボタン(110px) */
+            grid-template-columns: 110px 1fr 110px;
+            /* タイトル行 - ステータス行 - メイン行(残り全部) */
+            grid-template-rows: auto auto 1fr;
             grid-template-areas:
-                "modes title actions"
-                "modes status actions"
+                "title title title"
+                "status status status"
                 "modes grid actions";
             
             width: 100%;
             height: 100vh;
-            max-width: none; /* 幅制限解除 */
-            padding: 5px 20px; /* 左右に少し余白 */
+            max-width: none;
+            padding: 5px 20px;
+            gap: 5px; /* エリア間の隙間 */
         }
 
-        /* エリア割り当て */
-        .area-title   { grid-area: title; padding: 0; }
-        .area-modes   { grid-area: modes; height: 100%; align-items: center; margin: 0; }
-        .area-actions { grid-area: actions; height: 100%; align-items: center; margin: 0; }
-        .area-status  { grid-area: status; margin: 0; }
-        .area-grid    { grid-area: grid; align-items: flex-start; overflow-y: auto; }
+        /* エリア配置 */
+        .area-title   { grid-area: title; }
+        .area-status  { grid-area: status; }
+        
+        /* コンテンツ行の設定 */
+        .area-modes   { 
+            grid-area: modes; 
+            height: 100%; 
+            /* Flexboxで上寄せにする */
+            display: flex;
+            align-items: flex-start; /* 横軸：左寄せ */
+            justify-content: flex-start; /* 縦軸：上寄せ (columnなので) */
+            padding-top: 6px; /* 盤面のpaddingと合わせて微調整 */
+        }
+        
+        .area-actions { 
+            grid-area: actions; 
+            height: 100%; 
+            display: flex;
+            align-items: flex-end; /* 右側は下寄せ等のアレンジも可だが、上揃えなら flex-start */
+            justify-content: flex-start;
+            padding-top: 6px;
+        }
 
-        /* 左側（モード選択）の並びを縦にする */
+        .area-grid    { 
+            grid-area: grid; 
+            height: 100%; 
+            display: flex;
+            justify-content: center; /* 中央配置 */
+            align-items: flex-start; /* 上寄せ */
+            overflow: hidden; /* はみ出し防止 */
+        }
+
+        /* 左側（モード選択）を縦並びに */
         .mode-group {
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
             width: 100%;
         }
         .mode-btn {
@@ -217,24 +260,30 @@
             text-align: center;
         }
 
-        /* 右側（アクション）の並びを縦にする */
+        /* 右側（アクション）を縦並びに */
         .action-group {
             flex-direction: column;
-            gap: 15px;
+            gap: 12px;
             width: 100%;
         }
         .action-btn {
             width: 100%;
         }
 
-        /* タイトルを少し小さくしてスペース確保 */
-        h1 { font-size: 1.1rem; padding: 5px; }
+        /* タイトル・ステータス微調整 */
+        h1 { font-size: 1rem; padding: 2px 0; }
+        .status-bar { height: 1.2em; font-size: 0.9rem; }
         
         /* 盤面のマージン調整 */
-        .grid-board { margin-top: 5px; }
+        .grid-board { margin: 0; }
         
-        /* マスサイズを縦画面より少し小さく調整して収まりやすくする（任意） */
-        .cell { width: 50px; height: 50px; font-size: 1.3rem; }
+        /* ★★★ セルサイズの自動最大化 ★★★ */
+        /* 計算した変数を適用 */
+        .cell { 
+            width: var(--ls-final-cell); 
+            height: var(--ls-final-cell); 
+            font-size: calc(var(--ls-final-cell) * 0.5); /* 文字サイズも連動 */
+        }
     }
 
 </style>
@@ -246,6 +295,12 @@
         <div class="area-title">
             <h1>ラッキーパネル補助ツール</h1>
         </div>
+        
+        <div class="area-status">
+            <div class="status-bar" id="statusBar">
+                次は:<span class="next-char" id="nextCharDisplay">-</span>
+            </div>
+        </div>
 
         <div class="area-modes">
             <div class="mode-group">
@@ -256,21 +311,15 @@
             </div>
         </div>
 
+        <div class="area-grid">
+            <div class="grid-board" id="grid"></div>
+        </div>
+
         <div class="area-actions">
             <div class="action-group">
                 <button class="action-btn" id="resetBtn" onclick="resetCurrentGame()">リセット</button>
                 <button class="action-btn" id="nextBtn" onclick="nextMode()">次へ</button>
             </div>
-        </div>
-
-        <div class="area-status">
-            <div class="status-bar" id="statusBar">
-                次は:<span class="next-char" id="nextCharDisplay">-</span>
-            </div>
-        </div>
-
-        <div class="area-grid">
-            <div class="grid-board" id="grid"></div>
         </div>
 
     </div>
@@ -284,7 +333,6 @@
         4: { rows: 4, cols: 6, chars: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K'] }
     };
 
-    // カラーマップ
     const colorMap = {
         'A': 'bg-A', 'B': 'bg-B', 'C': 'bg-C', 'D': 'bg-D', 'E': 'bg-E',
         'F': 'bg-F', 'G': 'bg-G', 'H': 'bg-H', 'I': 'bg-I', 'J': 'bg-J', 'K': 'bg-K',
@@ -327,6 +375,7 @@
         supplyQueue.push('〆');
         updateStatus();
 
+        // 激辛モード等の列数制御
         gridElement.style.gridTemplateColumns = `repeat(${config.cols}, min-content)`;
         gridElement.innerHTML = '';
 
@@ -438,8 +487,8 @@
         const moveX = Math.abs(touch.clientX - touchStartX);
         const moveY = Math.abs(touch.clientY - touchStartY);
 
-        // ★★★ 移動判定閾値 5px ★★★
-        if (moveX > 5 || moveY > 5) {
+        /* チューニングポイント */
+        if (moveX > 2 || moveY > 2) {
             isDraggingMode = true;
         }
 
