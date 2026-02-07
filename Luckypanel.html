@@ -10,7 +10,10 @@
 <style>
     /* --- 基本変数 --- */
     :root {
-        /* スマホ横向き時のセルサイズ計算 */
+        /* スマホ横向き時のセルサイズ計算 
+           高さ: (画面高さ - 上部要素計 約90px) ÷ 4行
+           幅  : (画面幅 - 左右サイドバー計 240px) ÷ 6列
+        */
         --ls-cell-h: calc((100vh - 90px) / 4);
         --ls-cell-w: calc((100vw - 240px) / 6);
         --ls-final-cell: min(var(--ls-cell-h), var(--ls-cell-w));
@@ -31,7 +34,7 @@
         -webkit-tap-highlight-color: transparent;
         display: flex;
         justify-content: center;
-        overflow: hidden;
+        overflow: hidden; /* スクロール禁止 */
     }
 
     h1 {
@@ -43,7 +46,7 @@
         line-height: 1.2;
     }
 
-    /* --- レイアウトコンテナ --- */
+    /* --- レイアウトコンテナ (共通) --- */
     .layout-container {
         width: 100%;
         max-width: 600px;
@@ -135,7 +138,7 @@
         display: grid;
         gap: 4px;
         background-color: #555;
-        padding: 6px;
+        padding: 6px; /* 盤面のパディング */
         border-radius: 8px;
         box-shadow: 0 6px 12px rgba(0,0,0,0.15);
         touch-action: none;
@@ -230,19 +233,19 @@
             grid-area: modes; 
             height: 100%; 
             display: flex;
-            align-items: flex-start; 
+            align-items: flex-start; /* 上寄せ */
             justify-content: flex-start;
-            padding-top: 5px; 
+            padding-top: 6px; /* 盤面のパディングと合わせる */
         }
         
-        /* 右：アクション（上寄せ・右寄せ） */
+        /* 右：アクション（上寄せ） */
         .area-actions { 
             grid-area: actions; 
             height: 100%; 
             display: flex;
-            align-items: flex-end; /* 右端へ */
-            justify-content: flex-start; /* ★上辺揃え★ */
-            padding-top: 5px; /* 左側モードや盤面と高さを合わせる */
+            align-items: flex-start; /* 縦方向上寄せ */
+            justify-content: center; /* 横方向は中央 */
+            padding-top: 6px; /* ★盤面のパディングと合わせる★ */
         }
 
         /* 中央：グリッド（上寄せ・中央配置） */
@@ -265,13 +268,13 @@
 
         .action-group {
             flex-direction: column;
-            gap: 30px; /* 間隔維持 */
+            gap: 30px; 
             width: 100%;
         }
         /* ボタンサイズ（縦に大きく） */
         .action-btn { 
             width: 100%; 
-            padding: 22px 10px; /* ★縦のパディングを増やして縦長に★ */
+            padding: 22px 10px; 
         }
         
         /* 盤面 */
