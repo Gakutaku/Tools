@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ラッキーパネル補助ツール8</title>
+<title>ラッキーパネル補助ツール9</title>
 <link rel="icon" href="LuckyPanel_favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="LuckyPanel_favicon.png">
 
@@ -13,14 +13,15 @@
        =========================================
     */
     :root {
-        /* 高さ: 上部ヘッダー(約90px)を引いた残りを4等分 */
+        /* 高さ: ヘッダー除外分を4等分 */
         --ls-cell-h: calc((100vh - 90px) / 4);
         
-        /* 幅: 画面幅 - (左メニュー + 右ボタン + 余白) ÷ 6列
-           ※280pxだと見切れ、420pxだと小さすぎたため、340pxに調整 */
-        --ls-cell-w: calc((100vw - 340px) / 6);
+        /* 幅: Save1の計算式(280px)だと隙間を確保した際に6列ではみ出すため、
+           隙間分を含めて安全マージンを「360px」に調整しました。
+           これでSave1の隙間を維持しつつ、全表示が可能になります。 */
+        --ls-cell-w: calc((100vw - 360px) / 6);
         
-        /* 正方形にするため小さい方を採用 */
+        /* 小さい方を採用 */
         --ls-final-cell: min(var(--ls-cell-h), var(--ls-cell-w));
     }
 
@@ -59,7 +60,7 @@
         font-weight: bold;
     }
 
-    /* --- レイアウトコンテナ (縦向き用) --- */
+    /* --- 共通: 縦向きレイアウト --- */
     .layout-container {
         width: 100%;
         max-width: 600px;
@@ -77,7 +78,7 @@
     .area-status  { order: 4; width: 100%; display: flex; justify-content: center; margin-bottom: 5px; flex-shrink: 0; }
     .area-grid    { order: 5; width: 100%; display: flex; flex-direction: column; align-items: center; flex-grow: 1; overflow: hidden; }
 
-    /* ボタンとグリッドの基本スタイル */
+    /* パーツ共通設定 */
     .mode-group { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
     .action-group { display: flex; gap: 15px; justify-content: center; width: 100%; max-width: 400px; flex-direction: row; }
     
@@ -97,7 +98,6 @@
     .status-bar { font-weight: bold; height: 1.5em; color: #555; display: flex; align-items: center; }
     .next-char { color: #d35400; font-size: 1.2em; margin-left: 5px; }
 
-    /* 盤面 (縦向き) */
     .grid-board {
         display: grid; gap: 4px; background-color: #555; padding: 6px;
         border-radius: 8px; box-shadow: 0 6px 12px rgba(0,0,0,0.15); touch-action: none; height: fit-content; 
@@ -132,9 +132,9 @@
         
         .layout-container {
             display: grid;
-            /* ★ブロック定義★ */
-            /* 左(中身に合わせる) - 中央(残り全部) - 右(固定85px) */
-            grid-template-columns: auto 1fr 85px;
+            /* ★Save1の設定に戻す★ */
+            /* 左(auto) - 中央(auto) - 右(固定85px) */
+            grid-template-columns: auto auto 85px;
             grid-template-rows: auto auto 1fr;
             grid-template-areas:
                 "title title title"
@@ -144,56 +144,55 @@
             width: 100%;
             height: 100vh;
             max-width: none;
-            padding: 5px 0; 
-            column-gap: 0; 
+            /* Save1と同じ余白設定に戻す */
+            padding: 5px 10px; 
+            column-gap: 20px; 
             row-gap: 2px;
         }
 
-        .area-title, .area-status { order: initial; margin: 0; padding: 0 10px; }
+        .area-title, .area-status { order: initial; margin: 0; padding: 0; }
         .area-title   { grid-area: title; }
         .area-status  { grid-area: status; }
         h1 { font-size: 1rem; padding: 2px 0; }
         .status-bar { height: 1.2em; font-size: 0.9rem; margin-bottom: 2px; }
 
-        /* --- 3つのブロックの配置設定 --- */
-        
-        /* 1. 左ブロック (モード) */
+        /* 左エリア */
         .area-modes { 
-            grid-area: modes;
+            grid-area: modes; 
             height: 100%; 
             display: flex;
             align-items: flex-start; 
             justify-content: flex-end; 
-            /* 上下パディングを6pxに統一 (盤面枠と同じ) */
-            padding: 6px 10px; 
+            /* 盤面(6px)と位置を合わせる */
+            padding-top: 6px; 
         }
         
-        /* 2. 中央ブロック (盤面) */
-        .area-grid { 
-            grid-area: grid;
-            height: 100%; 
-            display: flex;
-            justify-content: center; 
-            align-items: flex-start;
-            padding: 0; 
-        }
-
-        /* 3. 右ブロック (アクション) */
+        /* 右エリア */
         .area-actions { 
-            grid-area: actions;
+            grid-area: actions; 
             height: 100%; 
             display: flex;
             align-items: flex-start; 
             justify-content: flex-start; 
-            /* 上下パディングを6pxに統一 (盤面枠と同じ) */
-            padding: 6px 10px; 
+            /* 盤面(6px)と位置を合わせる */
+            padding-top: 6px; 
+            padding-bottom: 6px; 
         }
 
-        /* --- 中身のスタイル --- */
+        /* 中央エリア */
+        .area-grid { 
+            grid-area: grid; 
+            height: 100%; 
+            display: flex;
+            justify-content: center; 
+            align-items: flex-start; 
+            overflow: hidden; 
+        }
 
+        /* 左ボタン */
         .mode-group {
             flex-direction: column;
-            gap: 4px; /* 隙間を盤面(4px)と統一 */
+            gap: 4px; /* 盤面gapと一致 */
             width: auto;
         }
         .mode-btn { 
@@ -203,13 +202,14 @@
             font-size: 1rem;
             margin: 0;
             box-sizing: border-box;
-            height: var(--ls-final-cell); /* 高さをセルと統一 */
+            height: var(--ls-final-cell);
             display: flex; align-items: center; justify-content: center;
         }
 
+        /* 右ボタン */
         .action-group {
             flex-direction: column-reverse; 
-            justify-content: space-between; /* 上下に配置 */
+            justify-content: space-between; 
             gap: 15px; 
             width: 100%;
             height: 100%; 
@@ -225,11 +225,14 @@
         .grid-board { 
             margin: 0 auto; 
             box-sizing: border-box;
-            /* ★最重要: 幅を計算ではなく中身に合わせる設定★ */
+            
+            /* ★ここだけはSave1から変更（不具合修正）★
+               widthを計算式ではなく max-content に。
+               これで中身（セル+枠+隙間）に合わせて自動で幅が決まるため、
+               枠が見切れる現象が物理的に起きなくなります。 */
             width: max-content;
             height: auto;
             
-            /* padding(6px) + gap(4px) = 10pxの余白構造 */
             grid-template-columns: repeat(6, var(--ls-final-cell)) !important;
             grid-template-rows: repeat(4, var(--ls-final-cell)) !important;
         }
@@ -248,15 +251,13 @@
        ========================================= */
     @media screen and (min-width: 1024px) and (orientation: landscape) {
         :root {
-            /* PC用: 左右ブロックが200pxになるため、中央のスペースを再計算
-               (100vw - 左200 - 右200 - 余白) ÷ 6 
-               安全マージンとして650px引きます */
+            /* PC用: 左右200px+隙間を考慮して安全に引く */
             --ls-cell-w: calc((100vw - 650px) / 6);
         }
 
         .layout-container {
-            /* 左右ブロックの幅を200pxに固定 */
-            grid-template-columns: 200px 1fr 200px;
+            /* 左右200px、中央可変 */
+            grid-template-columns: 200px auto 200px;
         }
         
         .mode-btn { width: 100%; font-size: 1.5rem; }
@@ -269,7 +270,7 @@
 
     <div class="layout-container">
         <div class="area-title">
-            <h1>ラッキーパネル補助ツール8</h1>
+            <h1>ラッキーパネル補助ツール9</h1>
         </div>
         
         <div class="area-modes">
