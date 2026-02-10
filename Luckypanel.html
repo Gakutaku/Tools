@@ -416,8 +416,7 @@
 
         <div class="area-grid">
             <div class="grid-board" id="grid"></div>
-            <div class="portrait-hint">※ホーム画面に追加（Webアプリとして開く）</div>
-            <div class="portrait-hint">　→　横向き推奨？</div>
+            <div class="portrait-hint">※ホーム画面に追加（Webアプリとして開く）推奨（横向きがry）/div>
         </div>
     </div>
 
@@ -452,7 +451,6 @@
     const statusBar = document.getElementById('statusBar');
     const actionGroup = document.getElementById('actionGroup');
 
-    // ▼ 修正: モード変更時は「初期化(false)」を指定
     function selectMode(id) {
         currentModeId = id;
         document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
@@ -460,26 +458,23 @@
         initGame(false);
     }
 
-    // ▼ 修正: 次へボタンも「初期化(false)」を指定
     function nextMode() {
         let nextId = currentModeId + 1;
         if (nextId > 4) nextId = 1;
         selectMode(nextId);
     }
 
-    // ▼ 修正: リセットボタンも「初期化(false)」を指定
     function resetCurrentGame() {
         initGame(false);
     }
 
-    // ▼ 修正: initGameにデータを保持するかどうかのフラグ(keepData)を追加
+    // keepData=trueでリサイズ時のデータ保持
     function initGame(keepData = false) {
         const config = modes[currentModeId];
         let savedCells = [];
 
-        // 1. データを保持する場合（回転時）、現在の盤面を保存
         if (keepData) {
-            // フィラー(詰め物)以外の有効なセルだけを取得して順番に保存
+            // 現在の盤面を保存
             const currentCells = document.querySelectorAll('.cell:not(.filler)');
             currentCells.forEach(cell => {
                 savedCells.push({
@@ -488,7 +483,7 @@
                 });
             });
         } else {
-            // 2. 初期化する場合、キューを作り直す
+            // 初期化（ペアを作成）
             supplyQueue = [];
             config.chars.forEach(char => { supplyQueue.push(char); supplyQueue.push(char); });
             supplyQueue.push('★');
@@ -497,13 +492,11 @@
 
         updateStatus();
 
-        // 3. 盤面の再描画
         const isLandscape = window.matchMedia("(orientation: landscape)").matches;
         gridElement.innerHTML = '';
         
-        let activeCellIndex = 0; // データを復元するためのカウンタ
+        let activeCellIndex = 0;
 
-        // セル作成後にデータを復元する関数
         const tryRestoreData = (cell) => {
             if (keepData && savedCells[activeCellIndex]) {
                 cell.textContent = savedCells[activeCellIndex].text;
@@ -522,7 +515,6 @@
                     const isActive = isRowActive && isColActive;
                     
                     const cell = createCell(isActive);
-                    // 有効なセルの場合のみデータを復元
                     if (isActive) tryRestoreData(cell);
                 }
             }
@@ -539,7 +531,6 @@
         }
     }
     
-    // ▼ 修正: リサイズ時は「保持(true)」で呼び出す
     window.addEventListener('resize', () => {
         initGame(true);
     });
@@ -555,7 +546,6 @@
         }
     }
 
-    // ▼ 修正: 作成したセル要素をreturnするように変更
     function createCell(isActive) {
         const cell = document.createElement('div');
         cell.classList.add('cell'); 
@@ -572,7 +562,20 @@
 
     function updateStatus() {
         if (supplyQueue.length > 0) {
-            nextCharDisplay.textContent = supplyQueue[0];
+            const current = supplyQueue[0];
+            let displayText = current;
+
+            // ★と〆以外の場合に判定
+            if (current !== '★' && current !== '〆') {
+                // 配列の2番目と同じ文字なら「1つ目」
+                if (supplyQueue[1] === current) {
+                    displayText += ' （１つ目）';
+                } else {
+                    displayText += ' （２つ目）';
+                }
+            }
+
+            nextCharDisplay.textContent = displayText;
             statusBar.style.visibility = 'visible';
         } else {
             nextCharDisplay.textContent = "完了";
@@ -710,4 +713,3 @@
 
 </body>
 </html>
-
