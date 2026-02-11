@@ -232,6 +232,12 @@
     .cell.dragging { opacity: 0.6; transform: scale(1.1); z-index: 999; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
     .cell.over { border: 2px dashed #007bff !important; opacity: 0.8; transform: scale(0.95); }
 
+.cell.selected { 
+        border: 3px solid #e74c3c !important; 
+        transform: scale(0.95); 
+        box-shadow: 0 0 10px rgba(231, 76, 60, 0.5); 
+        z-index: 10; 
+    }
 
     /* =========================================
        ▼▼▼ 横向き（ランドスケープ）設定 ▼▼▼ 
@@ -418,6 +424,7 @@
             <div class="grid-board" id="grid"></div>
             <div class="portrait-hint">※ホーム画面に追加（Webアプリとして開く）推奨？</div>
             <div class="portrait-hint">（横向きもあry）</div>
+
         </div>
     </div>
 
@@ -446,6 +453,7 @@
     let touchStartX = 0;
     let touchStartY = 0;
     let isDraggingMode = false;
+    let selectedCell = null;
 
     const gridElement = document.getElementById('grid');
     const nextCharDisplay = document.getElementById('nextCharDisplay');
@@ -473,6 +481,7 @@
     function initGame(keepData = false) {
         const config = modes[currentModeId];
         let savedCells = [];
+        selectedCell = null;
 
         if (keepData) {
             // 現在の盤面を保存
@@ -612,7 +621,7 @@
         const targetText = target.textContent;
         const targetClass = target.className;
 
-        const cleanClass = (cls) => cls.replace(' dragging', '').replace(' over', '');
+        const cleanClass = (cls) => cls.replace(' dragging', '').replace(' over', '').replace(' selected', '');
 
         src.textContent = targetText;
         src.className = cleanClass(targetClass);
@@ -624,7 +633,33 @@
     function addEvents(cell) {
         cell.addEventListener('click', (e) => {
             if (e.detail === 0) return; 
-            processInput(cell);
+
+            // ① パネル入力処理（まだ文字が入っていないセルがタップされた場合）
+            if (cell.classList.contains('empty') && supplyQueue.length > 0) {
+                if (selectedCell) {
+                    selectedCell.classList.remove('selected');
+                    selectedCell = null;
+                }
+                processInput(cell);
+                return;
+            }
+
+            // ② タップ入れ替え処理（無効なセルは無視）
+            if (cell.classList.contains('filler')) return;
+
+            if (!selectedCell) {
+                // 何も選択されていない場合は、このセルを選択状態にする
+                selectedCell = cell;
+                cell.classList.add('selected');
+            } else if (selectedCell === cell) {
+                // 同じセルをもう一度タップした場合は、選択を解除する
+                cell.classList.remove('selected');
+                selectedCell = null;
+            } else {
+                // 別のセルが選択されている状態でタップした場合は、入れ替える
+                swapCells(selectedCell, cell);
+                selectedCell = null; // 入れ替え後に選択状態をリセット
+            }
         });
 
         cell.setAttribute('draggable', true);
@@ -695,7 +730,7 @@
 
         if (!isDraggingMode) {
             e.preventDefault();
-            processInput(this);
+            cell = this; // context合わせ
         } else {
             const touch = e.changedTouches[0];
             const target = document.elementFromPoint(touch.clientX, touch.clientY);
@@ -714,5 +749,3 @@
 
 </body>
 </html>
-
-
