@@ -232,7 +232,7 @@
     .cell.dragging { opacity: 0.6; transform: scale(1.1); z-index: 999; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
     .cell.over { border: 2px dashed #007bff !important; opacity: 0.8; transform: scale(0.95); }
 
-.cell.selected { 
+    .cell.selected { 
         border: 3px solid #e74c3c !important; 
         transform: scale(0.95); 
         box-shadow: 0 0 10px rgba(231, 76, 60, 0.5); 
@@ -630,36 +630,40 @@
         target.className = cleanClass(srcClass);
     }
 
+    // 遅延をなくすための共通タップ処理関数
+    function handleTap(cell) {
+        // ① パネル入力処理（まだ文字が入っていないセルがタップされた場合）
+        if (cell.classList.contains('empty') && supplyQueue.length > 0) {
+            if (selectedCell) {
+                selectedCell.classList.remove('selected');
+                selectedCell = null;
+            }
+            processInput(cell);
+            return;
+        }
+
+        // ② タップ入れ替え処理（無効なセルは無視）
+        if (cell.classList.contains('filler')) return;
+
+        if (!selectedCell) {
+            // 何も選択されていない場合は、このセルを選択状態にする
+            selectedCell = cell;
+            cell.classList.add('selected');
+        } else if (selectedCell === cell) {
+            // 同じセルをもう一度タップした場合は、選択を解除する
+            cell.classList.remove('selected');
+            selectedCell = null;
+        } else {
+            // 別のセルが選択されている状態でタップした場合は、入れ替える
+            swapCells(selectedCell, cell);
+            selectedCell = null; // 入れ替え後に選択状態をリセット
+        }
+    }
+
     function addEvents(cell) {
         cell.addEventListener('click', (e) => {
             if (e.detail === 0) return; 
-
-            // ① パネル入力処理（まだ文字が入っていないセルがタップされた場合）
-            if (cell.classList.contains('empty') && supplyQueue.length > 0) {
-                if (selectedCell) {
-                    selectedCell.classList.remove('selected');
-                    selectedCell = null;
-                }
-                processInput(cell);
-                return;
-            }
-
-            // ② タップ入れ替え処理（無効なセルは無視）
-            if (cell.classList.contains('filler')) return;
-
-            if (!selectedCell) {
-                // 何も選択されていない場合は、このセルを選択状態にする
-                selectedCell = cell;
-                cell.classList.add('selected');
-            } else if (selectedCell === cell) {
-                // 同じセルをもう一度タップした場合は、選択を解除する
-                cell.classList.remove('selected');
-                selectedCell = null;
-            } else {
-                // 別のセルが選択されている状態でタップした場合は、入れ替える
-                swapCells(selectedCell, cell);
-                selectedCell = null; // 入れ替え後に選択状態をリセット
-            }
+            handleTap(cell); // PCなどの通常のクリック時はこちらを実行
         });
 
         cell.setAttribute('draggable', true);
@@ -729,8 +733,8 @@
         document.querySelectorAll('.cell').forEach(c => c.classList.remove('over'));
 
         if (!isDraggingMode) {
-            e.preventDefault();
-            cell = this; // context合わせ
+            e.preventDefault(); // スマホ特有の遅延クリックイベントをここでブロック
+            handleTap(this);    // 指が離れた瞬間に即座に処理を実行
         } else {
             const touch = e.changedTouches[0];
             const target = document.elementFromPoint(touch.clientX, touch.clientY);
